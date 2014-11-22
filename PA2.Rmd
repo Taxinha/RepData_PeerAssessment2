@@ -7,6 +7,9 @@ output:
     keep_md: yes
 ---
 
+##Synopsis
+
+##Data Processing
 
 ### Loading Libraries and defining global variables
 ```{r library}
@@ -14,12 +17,11 @@ library(dplyr)
 
 fileURL      <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 localZipFile <- "./data/storm_data.csv.bz2"
-## localFile    <- "./data/storm_data.csv"
 inputRmdFile <- "PA2.Rmd"
 ```
 
 ### Helper functions
-```{r helper}
+```{r helperFunctions}
 ## Download and Extract Zip data file
 downloadAndExtractZipFile <- function(fileName){
   ## check if the data folder exists
@@ -42,21 +44,88 @@ readCSVFile <- function(fileName, ...){
   print(paste("Reading file ", fileName))
   read.csv(fileName, ...)
 }
+
+cleanupEVTYPE <- function(input){
+  output <- input %>%
+    toupper() %>%
+    gsub(pattern = "^AVALANCE", replacement = "AVALANCHE", perl = TRUE) %>%
+    gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
+    gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^DRY MIRCOBURST.+", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
+    gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^FLASH FLOOD.+", replacement = "FLASH FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^GUSTY WIND", replacement = "GUSTY WINDS", perl = TRUE) %>%
+    gsub(pattern = "^HEAT WAVE.+", replacement = "HEAT WAVE", perl = TRUE) %>%
+    gsub(pattern = "^HEAVY RAIN.+", replacement = "HEAVY RAIN", perl = TRUE) %>%
+    gsub(pattern = "^HEAVY SNOW.+", replacement = "HEAVY SNOW", perl = TRUE) %>%
+    gsub(pattern = "^FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
+    gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
+    gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
+    gsub(pattern = "^(HIGH|HIGH WIND.+)", replacement = "HIGH WIND", perl = TRUE) %>%
+    gsub(pattern = "^HURRICANE.+", replacement = "HURRICANE", perl = TRUE) %>%
+    gsub(pattern = "^HYPOTHERMIA.+", replacement = "HYPOTHERMIA", perl = TRUE) %>%
+    gsub(pattern = "^ICE.+", replacement = "ICE", perl = TRUE) %>%
+    gsub(pattern = "vLANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE)
+  
+  output
+}
 ```
 
-
-
+### Load Raw Data
 ```{r dataLoad, cache = TRUE}
 downloadAndExtractZipFile(localZipFile)
 
 data <- readCSVFile(localZipFile)
 
-summary(data)
+## summary(data)
 ```
+
+### Tidy Data
+```{r tidyDataHarmfull}
+
+tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
+  select(EVTYPE, FATALITIES, INJURIES) %>%
+  mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
+  group_by(EVTYPE) %>%
+  summarise(TOTAL_FATALITIES = sum(FATALITIES), TOTAL_INJURIES = sum(INJURIES))
+
+
+
+str(tidyDataHarmful)
+```
+
+```{r summaryTidyDataHarmful}
+summary(tidyDataHarmful)
+```
+
+```{r tidyDataDMG}
+
+tidyDataDMG <- data %>%
+  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS)
+
+
+
+str(tidyDataDMG)
+```
+
+```{r summaryTidyDataDMG}
+summary(tidyDataDMG)
+```
+
+##Results
+
+
+## Questions
+1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+2) Across the United States, which types of events have the greatest economic consequences?
+
 
 
 ### Software Details used on this project
-```{r software_details}
+```{r softwareDetails}
 sessionInfo()
 ```
 

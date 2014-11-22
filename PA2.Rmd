@@ -1,0 +1,62 @@
+---
+title: "RepData - Peer Assessment 2"
+author: "Carlos Correia"
+date: "22 November 2014"
+output:
+  html_document:
+    keep_md: yes
+---
+
+
+### Loading Libraries and defining global variables
+```{r library}
+library(dplyr)
+
+fileURL      <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+localZipFile <- "./data/storm_data.csv.bz2"
+## localFile    <- "./data/storm_data.csv"
+inputRmdFile <- "PA2.Rmd"
+```
+
+### Helper functions
+```{r helper}
+## Download and Extract Zip data file
+downloadAndExtractZipFile <- function(fileName){
+  ## check if the data folder exists
+  if(!file.exists("data")){
+    dir.create("data")
+  }
+    
+  ## check if zip file exists - if not download the zip file with the data
+  if(!file.exists(fileName)){
+    download.file(fileURL, destfile = fileName, method = "curl")
+  }
+}
+
+## Reads the CSV data file
+readCSVFile <- function(fileName, ...){
+  if(! file.exists(fileName)){
+    stop(paste("readDataFile: File ", fileName, " doesn't exist"))
+  }
+  
+  print(paste("Reading file ", fileName))
+  read.csv(fileName, ...)
+}
+```
+
+
+
+```{r dataLoad, cache = TRUE}
+downloadAndExtractZipFile(localZipFile)
+
+data <- readCSVFile(localZipFile)
+
+summary(data)
+```
+
+
+### Software Details used on this project
+```{r software_details}
+sessionInfo()
+```
+

@@ -353,6 +353,34 @@ summary(tidyDataHarmful)
 ##                                   Max.   :91364
 ```
 
+```r
+tidyDataHarmful
+```
+
+```
+##               EVTYPE     Type value
+## 1            TORNADO Fatality  5658
+## 2     EXCESSIVE HEAT Fatality  1903
+## 3        FLASH FLOOD Fatality  1018
+## 4               HEAT Fatality   937
+## 5          LIGHTNING Fatality   817
+## 6  THUNDERSTORM WIND Fatality   711
+## 7        RIP CURRENT Fatality   577
+## 8              FLOOD Fatality   497
+## 9          HIGH WIND Fatality   293
+## 10      EXTREME COLD Fatality   287
+## 11           TORNADO   Injury 91364
+## 12    EXCESSIVE HEAT   Injury  6525
+## 13       FLASH FLOOD   Injury  1785
+## 14              HEAT   Injury  2100
+## 15         LIGHTNING   Injury  5232
+## 16 THUNDERSTORM WIND   Injury  9508
+## 17       RIP CURRENT   Injury   529
+## 18             FLOOD   Injury  6807
+## 19         HIGH WIND   Injury  1472
+## 20      EXTREME COLD   Injury   255
+```
+
 #### Cleanup data for the most expensive Storm Event Type
 
 ```r
@@ -363,18 +391,17 @@ tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
   mutate(FINALPROPDMG = mapply(calculateDMG, PROPDMG, PROPDMGEXP), 
          FINALCROPDMG = mapply(calculateDMG, CROPDMG, CROPDMGEXP)) %>%
   group_by(EVTYPE) %>%
-  summarise(TOTALPRODDMG = sum(FINALPROPDMG), 
-            TOTALCROPDMG = sum(FINALCROPDMG))
-##            TOTALDMG = TOTALPRODDMG + TOTALCROPDMG)
+  summarise(Property = sum(FINALPROPDMG), 
+            Crop = sum(FINALCROPDMG))
 
 str(tidyDataDMG)
 ```
 
 ```
 ## Classes 'tbl_df', 'tbl' and 'data.frame':	160 obs. of  3 variables:
-##  $ EVTYPE      : chr  "?" "AGRICULTURAL FREEZE" "APACHE COUNTY" "ASTRONOMICAL HIGH TIDE" ...
-##  $ TOTALPRODDMG: num  5000 0 5000 9425000 320000 ...
-##  $ TOTALCROPDMG: num  0 28820000 0 0 0 ...
+##  $ EVTYPE  : chr  "?" "AGRICULTURAL FREEZE" "APACHE COUNTY" "ASTRONOMICAL HIGH TIDE" ...
+##  $ Property: num  5000 0 5000 9425000 320000 ...
+##  $ Crop    : num  0 28820000 0 0 0 ...
 ##  - attr(*, "drop")= logi TRUE
 ```
 
@@ -384,7 +411,7 @@ summary(tidyDataDMG)
 ```
 
 ```
-##     EVTYPE           TOTALPRODDMG        TOTALCROPDMG      
+##     EVTYPE             Property              Crop          
 ##  Length:160         Min.   :0.000e+00   Min.   :0.000e+00  
 ##  Class :character   1st Qu.:1.538e+04   1st Qu.:0.000e+00  
 ##  Mode  :character   Median :4.505e+05   Median :0.000e+00  
@@ -420,8 +447,8 @@ print(plotHarmfull)
 
 ```r
 plotPropDMGData <- tidyDataDMG %>%
-  select(EVTYPE, TOTALPRODDMG) %>%
-  arrange(desc(TOTALPRODDMG)) %>%
+  select(EVTYPE, Property) %>%
+  arrange(desc(Property)) %>%
   head(n=10)
 
 plotPropDMGData
@@ -430,7 +457,7 @@ plotPropDMGData
 ```
 ## Source: local data frame [10 x 2]
 ## 
-##               EVTYPE TOTALPRODDMG
+##               EVTYPE     Property
 ## 1              FLOOD 145076186889
 ## 2          HURRICANE  84756180010
 ## 3            TORNADO  58542970113
@@ -445,8 +472,8 @@ plotPropDMGData
 
 ```r
 plotCropDMGData <- tidyDataDMG %>%
-  select(EVTYPE, TOTALCROPDMG) %>%
-  arrange(desc(TOTALCROPDMG)) %>%
+  select(EVTYPE, Crop) %>%
+  arrange(desc(Crop)) %>%
   head(n=10)
 
 plotCropDMGData
@@ -455,22 +482,22 @@ plotCropDMGData
 ```
 ## Source: local data frame [10 x 2]
 ## 
-##               EVTYPE TOTALCROPDMG
-## 1            DROUGHT  13972571780
-## 2              FLOOD   5906732950
-## 3          HURRICANE   5515292800
-## 4        RIVER FLOOD   5029459000
-## 5                ICE   5027113500
-## 6               HAIL   3026094806
-## 7        FLASH FLOOD   1437163150
-## 8       EXTREME COLD   1313023000
-## 9  THUNDERSTORM WIND   1225459732
-## 10             FROST   1160186000
+##               EVTYPE        Crop
+## 1            DROUGHT 13972571780
+## 2              FLOOD  5906732950
+## 3          HURRICANE  5515292800
+## 4        RIVER FLOOD  5029459000
+## 5                ICE  5027113500
+## 6               HAIL  3026094806
+## 7        FLASH FLOOD  1437163150
+## 8       EXTREME COLD  1313023000
+## 9  THUNDERSTORM WIND  1225459732
+## 10             FROST  1160186000
 ```
 
 ```r
 plotTotalDMGData <- tidyDataDMG %>%
-  arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
+  arrange(desc(Property), desc(Crop)) %>%
   head(n=20) %>%
   melt(id=c("EVTYPE"), variable.name = "Type")
 
@@ -478,47 +505,47 @@ plotTotalDMGData
 ```
 
 ```
-##                 EVTYPE         Type        value
-## 1                FLOOD TOTALPRODDMG 145076186889
-## 2            HURRICANE TOTALPRODDMG  84756180010
-## 3              TORNADO TOTALPRODDMG  58542970113
-## 4          STORM SURGE TOTALPRODDMG  47964724000
-## 5          FLASH FLOOD TOTALPRODDMG  16735266179
-## 6                 HAIL TOTALPRODDMG  15974777189
-## 7    THUNDERSTORM WIND TOTALPRODDMG   9773168468
-## 8             WILDFIRE TOTALPRODDMG   8491563500
-## 9       TROPICAL STORM TOTALPRODDMG   7714390550
-## 10        WINTER STORM TOTALPRODDMG   6748997265
-## 11           HIGH WIND TOTALPRODDMG   6003353773
-## 12         RIVER FLOOD TOTALPRODDMG   5118945500
-## 13                 ICE TOTALPRODDMG   3971717315
-## 14          HEAVY RAIN TOTALPRODDMG   3230998140
-## 15 SEVERE THUNDERSTORM TOTALPRODDMG   1205360000
-## 16             DROUGHT TOTALPRODDMG   1046106000
-## 17          HEAVY SNOW TOTALPRODDMG    952949150
-## 18           LIGHTNING TOTALPRODDMG    933925813
-## 19            BLIZZARD TOTALPRODDMG    659713950
-## 20             TYPHOON TOTALPRODDMG    600230000
-## 21               FLOOD TOTALCROPDMG   5906732950
-## 22           HURRICANE TOTALCROPDMG   5515292800
-## 23             TORNADO TOTALCROPDMG    417462919
-## 24         STORM SURGE TOTALCROPDMG       855000
-## 25         FLASH FLOOD TOTALCROPDMG   1437163150
-## 26                HAIL TOTALCROPDMG   3026094806
-## 27   THUNDERSTORM WIND TOTALCROPDMG   1225459732
-## 28            WILDFIRE TOTALCROPDMG    402781630
-## 29      TROPICAL STORM TOTALCROPDMG    694896000
-## 30        WINTER STORM TOTALCROPDMG     32444000
-## 31           HIGH WIND TOTALCROPDMG    686301900
-## 32         RIVER FLOOD TOTALCROPDMG   5029459000
-## 33                 ICE TOTALCROPDMG   5027113500
-## 34          HEAVY RAIN TOTALCROPDMG    795752800
-## 35 SEVERE THUNDERSTORM TOTALCROPDMG       200000
-## 36             DROUGHT TOTALCROPDMG  13972571780
-## 37          HEAVY SNOW TOTALCROPDMG    134673100
-## 38           LIGHTNING TOTALCROPDMG     12092090
-## 39            BLIZZARD TOTALCROPDMG    112060000
-## 40             TYPHOON TOTALCROPDMG       825000
+##                 EVTYPE     Type        value
+## 1                FLOOD Property 145076186889
+## 2            HURRICANE Property  84756180010
+## 3              TORNADO Property  58542970113
+## 4          STORM SURGE Property  47964724000
+## 5          FLASH FLOOD Property  16735266179
+## 6                 HAIL Property  15974777189
+## 7    THUNDERSTORM WIND Property   9773168468
+## 8             WILDFIRE Property   8491563500
+## 9       TROPICAL STORM Property   7714390550
+## 10        WINTER STORM Property   6748997265
+## 11           HIGH WIND Property   6003353773
+## 12         RIVER FLOOD Property   5118945500
+## 13                 ICE Property   3971717315
+## 14          HEAVY RAIN Property   3230998140
+## 15 SEVERE THUNDERSTORM Property   1205360000
+## 16             DROUGHT Property   1046106000
+## 17          HEAVY SNOW Property    952949150
+## 18           LIGHTNING Property    933925813
+## 19            BLIZZARD Property    659713950
+## 20             TYPHOON Property    600230000
+## 21               FLOOD     Crop   5906732950
+## 22           HURRICANE     Crop   5515292800
+## 23             TORNADO     Crop    417462919
+## 24         STORM SURGE     Crop       855000
+## 25         FLASH FLOOD     Crop   1437163150
+## 26                HAIL     Crop   3026094806
+## 27   THUNDERSTORM WIND     Crop   1225459732
+## 28            WILDFIRE     Crop    402781630
+## 29      TROPICAL STORM     Crop    694896000
+## 30        WINTER STORM     Crop     32444000
+## 31           HIGH WIND     Crop    686301900
+## 32         RIVER FLOOD     Crop   5029459000
+## 33                 ICE     Crop   5027113500
+## 34          HEAVY RAIN     Crop    795752800
+## 35 SEVERE THUNDERSTORM     Crop       200000
+## 36             DROUGHT     Crop  13972571780
+## 37          HEAVY SNOW     Crop    134673100
+## 38           LIGHTNING     Crop     12092090
+## 39            BLIZZARD     Crop    112060000
+## 40             TYPHOON     Crop       825000
 ```
 
 
@@ -526,8 +553,8 @@ plotTotalDMGData
 
 ```r
 plotDMGPROP <- 
-    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), 
-                                y = TOTALPRODDMG/10^9)) +
+    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -Property), 
+                                y = Property/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
@@ -536,14 +563,14 @@ plotDMGPROP <-
       title = "Property")
 
 plotCROPDMG <- 
-    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), 
-                                y = TOTALCROPDMG/10^9)) +
+    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -Crop), 
+                                y = Crop/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
         y = "Billions of Dollars", 
         x = "Weather Events",
-      title = "CROP")
+      title = "Crop")
 
 grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
              main = "Economic impact of Weather Events in the US")

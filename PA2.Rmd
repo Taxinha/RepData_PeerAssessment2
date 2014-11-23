@@ -172,10 +172,11 @@ str(tidyDataHarmful)
 
 ```{r summaryTidyDataHarmful}
 summary(tidyDataHarmful)
+tidyDataHarmful
 ```
 
 #### Cleanup data for the most expensive Storm Event Type
-```{r tidyDataDMG, cache=TRUE}
+```{r tidyDataDMG, cache=FALSE}
 ## From the RawData we remove the rows that don't have PROPERTY and CROP Damage, then select the columns EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG and CROPDMGEXP to have a reduced data set. After that we cleanup the EVTYPE column, calculate the real monetary damage for PROPERTY and CROP, group by the EVTYPE and calculate the the total monetary damage for PROPERTY and CROP per EVTYPE.
 tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
   select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
@@ -183,9 +184,8 @@ tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
   mutate(FINALPROPDMG = mapply(calculateDMG, PROPDMG, PROPDMGEXP), 
          FINALCROPDMG = mapply(calculateDMG, CROPDMG, CROPDMGEXP)) %>%
   group_by(EVTYPE) %>%
-  summarise(TOTALPRODDMG = sum(FINALPROPDMG), 
-            TOTALCROPDMG = sum(FINALCROPDMG))
-##            TOTALDMG = TOTALPRODDMG + TOTALCROPDMG)
+  summarise(Property = sum(FINALPROPDMG), 
+            Crop = sum(FINALCROPDMG))
 
 str(tidyDataDMG)
 ```
@@ -217,21 +217,21 @@ print(plotHarmfull)
 
 ```{r dmgDataSets}
 plotPropDMGData <- tidyDataDMG %>%
-  select(EVTYPE, TOTALPRODDMG) %>%
-  arrange(desc(TOTALPRODDMG)) %>%
+  select(EVTYPE, Property) %>%
+  arrange(desc(Property)) %>%
   head(n=10)
 
 plotPropDMGData
 
 plotCropDMGData <- tidyDataDMG %>%
-  select(EVTYPE, TOTALCROPDMG) %>%
-  arrange(desc(TOTALCROPDMG)) %>%
+  select(EVTYPE, Crop) %>%
+  arrange(desc(Crop)) %>%
   head(n=10)
 
 plotCropDMGData
 
 plotTotalDMGData <- tidyDataDMG %>%
-  arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
+  arrange(desc(Property), desc(Crop)) %>%
   head(n=20) %>%
   melt(id=c("EVTYPE"), variable.name = "Type")
 
@@ -242,8 +242,8 @@ plotTotalDMGData
 
 ```{r plotDMGPROPAndCROP, fig.width=9}
 plotDMGPROP <- 
-    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), 
-                                y = TOTALPRODDMG/10^9)) +
+    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -Property), 
+                                y = Property/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
@@ -252,14 +252,14 @@ plotDMGPROP <-
       title = "Property")
 
 plotCROPDMG <- 
-    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), 
-                                y = TOTALCROPDMG/10^9)) +
+    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -Crop), 
+                                y = Crop/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
         y = "Billions of Dollars", 
         x = "Weather Events",
-      title = "CROP")
+      title = "Crop")
 
 grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
              main = "Economic impact of Weather Events in the US")

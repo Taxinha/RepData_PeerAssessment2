@@ -1,5 +1,5 @@
 ---
-title: "RepData - Peer Assessment 2"
+title: "Weather Events impact on People Health and Economics in the US"
 author: "Carlos Correia"
 date: "23 November 2014"
 output:
@@ -10,6 +10,7 @@ output:
 ---
 
 ## Synopsis
+
 
 ## Data Processing
 
@@ -220,21 +221,21 @@ plotPropDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG)) %>%
   head(n=10)
 
-summary(plotPropDMGData)
+plotPropDMGData
 
 plotCropDMGData <- tidyDataDMG %>%
   select(EVTYPE, TOTALCROPDMG) %>%
   arrange(desc(TOTALCROPDMG)) %>%
   head(n=10)
 
-summary(plotCropDMGData)
+plotCropDMGData
 
 plotTotalDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
   head(n=20) %>%
   melt(id=c("EVTYPE"), variable.name = "Type")
 
-summary(plotTotalDMGData)
+plotTotalDMGData
 ```
 
 

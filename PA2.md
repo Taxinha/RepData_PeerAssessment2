@@ -1,8 +1,9 @@
-# RepData - Peer Assessment 2
+# Weather Events impact on People Health and Economics in the US
 Carlos Correia  
 23 November 2014  
 
 ## Synopsis
+
 
 ## Data Processing
 
@@ -423,17 +424,23 @@ plotPropDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG)) %>%
   head(n=10)
 
-summary(plotPropDMGData)
+plotPropDMGData
 ```
 
 ```
-##     EVTYPE           TOTALPRODDMG      
-##  Length:10          Min.   :6.749e+09  
-##  Class :character   1st Qu.:8.812e+09  
-##  Mode  :character   Median :1.636e+10  
-##                     Mean   :4.018e+10  
-##                     3rd Qu.:5.590e+10  
-##                     Max.   :1.451e+11
+## Source: local data frame [10 x 2]
+## 
+##               EVTYPE TOTALPRODDMG
+## 1              FLOOD 145076186889
+## 2          HURRICANE  84756180010
+## 3            TORNADO  58542970113
+## 4        STORM SURGE  47964724000
+## 5        FLASH FLOOD  16735266179
+## 6               HAIL  15974777189
+## 7  THUNDERSTORM WIND   9773168468
+## 8           WILDFIRE   8491563500
+## 9     TROPICAL STORM   7714390550
+## 10      WINTER STORM   6748997265
 ```
 
 ```r
@@ -442,17 +449,23 @@ plotCropDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALCROPDMG)) %>%
   head(n=10)
 
-summary(plotCropDMGData)
+plotCropDMGData
 ```
 
 ```
-##     EVTYPE           TOTALCROPDMG      
-##  Length:10          Min.   :1.160e+09  
-##  Class :character   1st Qu.:1.344e+09  
-##  Mode  :character   Median :4.027e+09  
-##                     Mean   :4.361e+09  
-##                     3rd Qu.:5.394e+09  
-##                     Max.   :1.397e+10
+## Source: local data frame [10 x 2]
+## 
+##               EVTYPE TOTALCROPDMG
+## 1            DROUGHT  13972571780
+## 2              FLOOD   5906732950
+## 3          HURRICANE   5515292800
+## 4        RIVER FLOOD   5029459000
+## 5                ICE   5027113500
+## 6               HAIL   3026094806
+## 7        FLASH FLOOD   1437163150
+## 8       EXTREME COLD   1313023000
+## 9  THUNDERSTORM WIND   1225459732
+## 10             FROST   1160186000
 ```
 
 ```r
@@ -461,17 +474,51 @@ plotTotalDMGData <- tidyDataDMG %>%
   head(n=20) %>%
   melt(id=c("EVTYPE"), variable.name = "Type")
 
-summary(plotTotalDMGData)
+plotTotalDMGData
 ```
 
 ```
-##     EVTYPE                    Type        value          
-##  Length:40          TOTALPRODDMG:20   Min.   :2.000e+05  
-##  Class :character   TOTALCROPDMG:20   1st Qu.:6.448e+08  
-##  Mode  :character                     Median :2.232e+09  
-##                                       Mean   :1.175e+10  
-##                                       3rd Qu.:6.990e+09  
-##                                       Max.   :1.451e+11
+##                 EVTYPE         Type        value
+## 1                FLOOD TOTALPRODDMG 145076186889
+## 2            HURRICANE TOTALPRODDMG  84756180010
+## 3              TORNADO TOTALPRODDMG  58542970113
+## 4          STORM SURGE TOTALPRODDMG  47964724000
+## 5          FLASH FLOOD TOTALPRODDMG  16735266179
+## 6                 HAIL TOTALPRODDMG  15974777189
+## 7    THUNDERSTORM WIND TOTALPRODDMG   9773168468
+## 8             WILDFIRE TOTALPRODDMG   8491563500
+## 9       TROPICAL STORM TOTALPRODDMG   7714390550
+## 10        WINTER STORM TOTALPRODDMG   6748997265
+## 11           HIGH WIND TOTALPRODDMG   6003353773
+## 12         RIVER FLOOD TOTALPRODDMG   5118945500
+## 13                 ICE TOTALPRODDMG   3971717315
+## 14          HEAVY RAIN TOTALPRODDMG   3230998140
+## 15 SEVERE THUNDERSTORM TOTALPRODDMG   1205360000
+## 16             DROUGHT TOTALPRODDMG   1046106000
+## 17          HEAVY SNOW TOTALPRODDMG    952949150
+## 18           LIGHTNING TOTALPRODDMG    933925813
+## 19            BLIZZARD TOTALPRODDMG    659713950
+## 20             TYPHOON TOTALPRODDMG    600230000
+## 21               FLOOD TOTALCROPDMG   5906732950
+## 22           HURRICANE TOTALCROPDMG   5515292800
+## 23             TORNADO TOTALCROPDMG    417462919
+## 24         STORM SURGE TOTALCROPDMG       855000
+## 25         FLASH FLOOD TOTALCROPDMG   1437163150
+## 26                HAIL TOTALCROPDMG   3026094806
+## 27   THUNDERSTORM WIND TOTALCROPDMG   1225459732
+## 28            WILDFIRE TOTALCROPDMG    402781630
+## 29      TROPICAL STORM TOTALCROPDMG    694896000
+## 30        WINTER STORM TOTALCROPDMG     32444000
+## 31           HIGH WIND TOTALCROPDMG    686301900
+## 32         RIVER FLOOD TOTALCROPDMG   5029459000
+## 33                 ICE TOTALCROPDMG   5027113500
+## 34          HEAVY RAIN TOTALCROPDMG    795752800
+## 35 SEVERE THUNDERSTORM TOTALCROPDMG       200000
+## 36             DROUGHT TOTALCROPDMG  13972571780
+## 37          HEAVY SNOW TOTALCROPDMG    134673100
+## 38           LIGHTNING TOTALCROPDMG     12092090
+## 39            BLIZZARD TOTALCROPDMG    112060000
+## 40             TYPHOON TOTALCROPDMG       825000
 ```
 
 

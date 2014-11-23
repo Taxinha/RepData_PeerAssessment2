@@ -423,22 +423,66 @@ plotPropDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG)) %>%
   head(n=10)
 
+summary(plotPropDMGData)
+```
+
+```
+##     EVTYPE           TOTALPRODDMG      
+##  Length:10          Min.   :6.749e+09  
+##  Class :character   1st Qu.:8.812e+09  
+##  Mode  :character   Median :1.636e+10  
+##                     Mean   :4.018e+10  
+##                     3rd Qu.:5.590e+10  
+##                     Max.   :1.451e+11
+```
+
+```r
 plotCropDMGData <- tidyDataDMG %>%
   select(EVTYPE, TOTALCROPDMG) %>%
   arrange(desc(TOTALCROPDMG)) %>%
   head(n=10)
 
+summary(plotCropDMGData)
+```
+
+```
+##     EVTYPE           TOTALCROPDMG      
+##  Length:10          Min.   :1.160e+09  
+##  Class :character   1st Qu.:1.344e+09  
+##  Mode  :character   Median :4.027e+09  
+##                     Mean   :4.361e+09  
+##                     3rd Qu.:5.394e+09  
+##                     Max.   :1.397e+10
+```
+
+```r
 plotTotalDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
   head(n=20) %>%
   melt(id=c("EVTYPE"), variable.name = "Type")
 
+summary(plotTotalDMGData)
+```
+
+```
+##     EVTYPE                    Type        value          
+##  Length:40          TOTALPRODDMG:20   Min.   :2.000e+05  
+##  Class :character   TOTALCROPDMG:20   1st Qu.:6.448e+08  
+##  Mode  :character                     Median :2.232e+09  
+##                                       Mean   :1.175e+10  
+##                                       3rd Qu.:6.990e+09  
+##                                       Max.   :1.451e+11
+```
+
+
+
+
+```r
 plotDMGPROP <- 
     ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), 
                                 y = TOTALPRODDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
-    geom_text(aes(label = format(round(TOTALPRODDMG/10^9, 2), nsmall=2))) +
     labs( 
         y = "Billions of Dollars", 
         x = "Weather Events",
@@ -449,7 +493,6 @@ plotCROPDMG <-
                                 y = TOTALCROPDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
-    geom_text(aes(label = format(round(TOTALCROPDMG/10^9, 2), nsmall=2))) +
     labs( 
         y = "Billions of Dollars", 
         x = "Weather Events",
@@ -459,7 +502,8 @@ grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
              main = "Economic impact of Weather Events in the US")
 ```
 
-![](./PA2_files/figure-html/plotDMGPROP-1.png) 
+![](./PA2_files/figure-html/plotDMGPROPAndCROP-1.png) 
+
 
 ```r
 plotTOTALDMG <- 
@@ -475,7 +519,5 @@ plotTOTALDMG <-
 print(plotTOTALDMG)
 ```
 
-![](./PA2_files/figure-html/plotDMGPROP-2.png) 
-
-
+![](./PA2_files/figure-html/plotTotalDMG-1.png) 
 

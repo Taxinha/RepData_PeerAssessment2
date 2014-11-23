@@ -214,22 +214,30 @@ print(plotHarmfull)
 
 ### 2) Across the United States, which types of events have the greatest economic consequences?
 
-```{r }
+```{r dmgDataSets}
 plotPropDMGData <- tidyDataDMG %>%
   select(EVTYPE, TOTALPRODDMG) %>%
   arrange(desc(TOTALPRODDMG)) %>%
   head(n=10)
+
+summary(plotPropDMGData)
 
 plotCropDMGData <- tidyDataDMG %>%
   select(EVTYPE, TOTALCROPDMG) %>%
   arrange(desc(TOTALCROPDMG)) %>%
   head(n=10)
 
+summary(plotCropDMGData)
+
 plotTotalDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
   head(n=20) %>%
   melt(id=c("EVTYPE"), variable.name = "Type")
+
+summary(plotTotalDMGData)
 ```
+
+
 
 ```{r plotDMGPROPAndCROP, fig.width=9}
 plotDMGPROP <- 
@@ -237,7 +245,6 @@ plotDMGPROP <-
                                 y = TOTALPRODDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
-    geom_text(aes(label = format(round(TOTALPRODDMG/10^9, 2), nsmall=2))) +
     labs( 
         y = "Billions of Dollars", 
         x = "Weather Events",

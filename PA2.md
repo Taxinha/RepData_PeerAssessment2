@@ -322,10 +322,10 @@ tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   group_by(EVTYPE) %>%
-  summarise(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)) %>%
-  arrange(desc(FATALITIES), desc(INJURIES)) %>%
+  summarise(Fatality = sum(FATALITIES), Injury = sum(INJURIES)) %>%
+  arrange(desc(Fatality), desc(Injury)) %>%
   head(n = 10) %>%
-  melt(id = c("EVTYPE"), variable.name = "TYPE")
+  melt(id = c("EVTYPE"), variable.name = "Type")
 
 str(tidyDataHarmful)
 ```
@@ -333,7 +333,7 @@ str(tidyDataHarmful)
 ```
 ## 'data.frame':	20 obs. of  3 variables:
 ##  $ EVTYPE: chr  "TORNADO" "EXCESSIVE HEAT" "FLASH FLOOD" "HEAT" ...
-##  $ TYPE  : Factor w/ 2 levels "FATALITIES","INJURIES": 1 1 1 1 1 1 1 1 1 1 ...
+##  $ Type  : Factor w/ 2 levels "Fatality","Injury": 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ value : num  5658 1903 1018 937 817 ...
 ```
 
@@ -343,13 +343,13 @@ summary(tidyDataHarmful)
 ```
 
 ```
-##     EVTYPE                  TYPE        value      
-##  Length:20          FATALITIES:10   Min.   :  255  
-##  Class :character   INJURIES  :10   1st Qu.:  565  
-##  Mode  :character                   Median : 1245  
-##                                     Mean   : 6914  
-##                                     3rd Qu.: 5338  
-##                                     Max.   :91364
+##     EVTYPE                Type        value      
+##  Length:20          Fatality:10   Min.   :  255  
+##  Class :character   Injury  :10   1st Qu.:  565  
+##  Mode  :character                 Median : 1245  
+##                                   Mean   : 6914  
+##                                   3rd Qu.: 5338  
+##                                   Max.   :91364
 ```
 
 #### Cleanup data for the most expensive Storm Event Type
@@ -395,19 +395,18 @@ summary(tidyDataDMG)
 ## Results
 
 
-####Questions
-1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+### 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 
 
 ```r
 plotHarmfull <- 
-    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value/1000, fill = TYPE)) +
+    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value/1000, fill = Type)) +
     geom_bar(stat="identity", position="dodge") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
         y = "Number of people (thousands)", 
-        x = "Storm Events",
-      title = "Impact of Storm Events on the US Population Health - TOP 10")
+        x = "Weather Events",
+      title = "Impact of Weather Events on the US Population Health")
     
 print(plotHarmfull)
 ```
@@ -415,7 +414,7 @@ print(plotHarmfull)
 ![](./PA2_files/figure-html/plotHarmfull-1.png) 
 
 
-2) Across the United States, which types of events have the greatest economic consequences?
+### 2) Across the United States, which types of events have the greatest economic consequences?
 
 
 ```r
@@ -432,41 +431,47 @@ plotCropDMGData <- tidyDataDMG %>%
 plotTotalDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
   head(n=20) %>%
-  melt(id=c("EVTYPE"), variable.name = "TYPE")
+  melt(id=c("EVTYPE"), variable.name = "Type")
 
 plotDMGPROP <- 
-    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), y = TOTALPRODDMG)) +
+    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), 
+                                y = TOTALPRODDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    geom_text(aes(label = format(round(TOTALPRODDMG/10^9, 2), nsmall=2))) +
     labs( 
-        y = "Dollares", 
-        x = "Storm Events",
-      title = "TOP 10 of events more costely")
+        y = "Billions of Dollars", 
+        x = "Weather Events",
+      title = "Property")
 
 plotCROPDMG <- 
-    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), y = TOTALCROPDMG)) +
+    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), 
+                                y = TOTALCROPDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    geom_text(aes(label = format(round(TOTALCROPDMG/10^9, 2), nsmall=2))) +
     labs( 
-        y = "Dollares", 
-        x = "Storm Events",
-      title = "TOP 10 of events more costely")
+        y = "Billions of Dollars", 
+        x = "Weather Events",
+      title = "CROP")
 
-plotTOTALDMG <- 
-    ggplot(plotTotalDMGData, aes(x = reorder(EVTYPE, -value), y = value, fill = TYPE)) +
-    geom_bar(stat="identity") +
-    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
-    labs( 
-        y = "Dollares", 
-        x = "Storm Events",
-      title = "TOP 20 of events more costely")
-
-grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2)
+grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
+             main = "Economic impact of Weather Events in the US")
 ```
 
 ![](./PA2_files/figure-html/plotDMGPROP-1.png) 
 
 ```r
+plotTOTALDMG <- 
+    ggplot(plotTotalDMGData, aes(x = reorder(EVTYPE, -value), 
+                                 y = value/1000000000, fill = Type)) +
+    geom_bar(stat="identity") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Billions of Dollars", 
+        x = "Weather Events",
+      title = "Economic impact of Weather Events in the US")
+
 print(plotTOTALDMG)
 ```
 

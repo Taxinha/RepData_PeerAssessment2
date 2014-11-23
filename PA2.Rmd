@@ -5,6 +5,8 @@ date: "23 November 2014"
 output:
   html_document:
     keep_md: yes
+    theme: "united"
+    toc: yes
 ---
 
 ## Synopsis
@@ -159,10 +161,10 @@ tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   group_by(EVTYPE) %>%
-  summarise(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)) %>%
-  arrange(desc(FATALITIES), desc(INJURIES)) %>%
+  summarise(Fatality = sum(FATALITIES), Injury = sum(INJURIES)) %>%
+  arrange(desc(Fatality), desc(Injury)) %>%
   head(n = 10) %>%
-  melt(id = c("EVTYPE"), variable.name = "TYPE")
+  melt(id = c("EVTYPE"), variable.name = "Type")
 
 str(tidyDataHarmful)
 ```
@@ -172,7 +174,7 @@ summary(tidyDataHarmful)
 ```
 
 #### Cleanup data for the most expensive Storm Event Type
-```{r tidyDataDMG, cache=FALSE}
+```{r tidyDataDMG, cache=TRUE}
 ## From the RawData we remove the rows that don't have PROPERTY and CROP Damage, then select the columns EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG and CROPDMGEXP to have a reduced data set. After that we cleanup the EVTYPE column, calculate the real monetary damage for PROPERTY and CROP, group by the EVTYPE and calculate the the total monetary damage for PROPERTY and CROP per EVTYPE.
 tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
   select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
@@ -194,27 +196,25 @@ summary(tidyDataDMG)
 ## Results
 
 
-####Questions
-1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+### 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 
 ```{r plotHarmfull, fig.width=9 }
 plotHarmfull <- 
-    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value/1000, fill = TYPE)) +
+    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value/1000, fill = Type)) +
     geom_bar(stat="identity", position="dodge") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
         y = "Number of people (thousands)", 
-        x = "Storm Events",
-      title = "Impact of Storm Events on the US Population Health - TOP 10")
+        x = "Weather Events",
+      title = "Impact of Weather Events on the US Population Health")
     
 print(plotHarmfull)
 ```
 
 
-2) Across the United States, which types of events have the greatest economic consequences?
+### 2) Across the United States, which types of events have the greatest economic consequences?
 
-```{r plotDMGPROP, fig.width=9}
-
+```{r }
 plotPropDMGData <- tidyDataDMG %>%
   select(EVTYPE, TOTALPRODDMG) %>%
   arrange(desc(TOTALPRODDMG)) %>%
@@ -228,39 +228,48 @@ plotCropDMGData <- tidyDataDMG %>%
 plotTotalDMGData <- tidyDataDMG %>%
   arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
   head(n=20) %>%
-  melt(id=c("EVTYPE"), variable.name = "TYPE")
+  melt(id=c("EVTYPE"), variable.name = "Type")
+```
 
+```{r plotDMGPROPAndCROP, fig.width=9}
 plotDMGPROP <- 
-    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), y = TOTALPRODDMG)) +
+    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), 
+                                y = TOTALPRODDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    geom_text(aes(label = format(round(TOTALPRODDMG/10^9, 2), nsmall=2))) +
     labs( 
-        y = "Dollares", 
-        x = "Storm Events",
-      title = "TOP 10 of events more costely")
+        y = "Billions of Dollars", 
+        x = "Weather Events",
+      title = "Property")
 
 plotCROPDMG <- 
-    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), y = TOTALCROPDMG)) +
+    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), 
+                                y = TOTALCROPDMG/10^9)) +
     geom_bar(stat="identity", fill="blue") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
-        y = "Dollares", 
-        x = "Storm Events",
-      title = "TOP 10 of events more costely")
+        y = "Billions of Dollars", 
+        x = "Weather Events",
+      title = "CROP")
+
+grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
+             main = "Economic impact of Weather Events in the US")
+
+```
+
+```{r plotTotalDMG, fig.width=9}
 
 plotTOTALDMG <- 
-    ggplot(plotTotalDMGData, aes(x = reorder(EVTYPE, -value), y = value, fill = TYPE)) +
+    ggplot(plotTotalDMGData, aes(x = reorder(EVTYPE, -value), 
+                                 y = value/1000000000, fill = Type)) +
     geom_bar(stat="identity") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
-        y = "Dollares", 
-        x = "Storm Events",
-      title = "TOP 20 of events more costely")
-
-grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2)
+        y = "Billions of Dollars", 
+        x = "Weather Events",
+      title = "Economic impact of Weather Events in the US")
 
 print(plotTOTALDMG)
 ```
-
-
 

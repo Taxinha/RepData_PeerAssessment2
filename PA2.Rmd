@@ -161,7 +161,7 @@ tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
   group_by(EVTYPE) %>%
   summarise(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)) %>%
   arrange(desc(FATALITIES), desc(INJURIES)) %>%
-  head(n = 20) %>%
+  head(n = 10) %>%
   melt(id = c("EVTYPE"), variable.name = "TYPE")
 
 str(tidyDataHarmful)
@@ -203,9 +203,9 @@ plotHarmfull <-
     geom_bar(stat="identity", position="dodge") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
-        y = "Number of people (milion)", 
+        y = "Number of people (thousands)", 
         x = "Storm Events",
-      title = "Impact of Storm Events on the US Population Health - TOP 20")
+      title = "Impact of Storm Events on the US Population Health - TOP 10")
     
 print(plotHarmfull)
 ```
@@ -213,7 +213,7 @@ print(plotHarmfull)
 
 2) Across the United States, which types of events have the greatest economic consequences?
 
-```{r plotDMGPROP}
+```{r plotDMGPROP, fig.width=9}
 
 plotPropDMGData <- tidyDataDMG %>%
   select(EVTYPE, TOTALPRODDMG) %>%

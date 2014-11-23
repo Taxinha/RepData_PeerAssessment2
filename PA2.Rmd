@@ -14,6 +14,8 @@ output:
 ### Loading Libraries and defining global variables
 ```{r library}
 library(dplyr)
+library(reshape2)
+library(ggplot2)
 
 fileURL      <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 localZipFile <- "./data/storm_data.csv.bz2"
@@ -52,22 +54,60 @@ cleanupEVTYPE <- function(input){
     gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
     gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
     gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
-    gsub(pattern = "^DRY MIRCOBURST.+", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
-    gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^DROUGHT.+", replacement = "DROUGHT", perl = TRUE) %>%
+    gsub(pattern = "^DRY MIRCOBURST WINDS$", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
+    gsub(pattern = "^EXTREME COLD.+", replacement = "EXTREME COLD", perl = TRUE) %>%
     gsub(pattern = "^FLASH FLOOD.+", replacement = "FLASH FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WIND", replacement = "GUSTY WINDS", perl = TRUE) %>%
     gsub(pattern = "^HEAT WAVE.+", replacement = "HEAT WAVE", perl = TRUE) %>%
     gsub(pattern = "^HEAVY RAIN.+", replacement = "HEAVY RAIN", perl = TRUE) %>%
     gsub(pattern = "^HEAVY SNOW.+", replacement = "HEAVY SNOW", perl = TRUE) %>%
     gsub(pattern = "^FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^RIVER FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
     gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
     gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
-    gsub(pattern = "^(HIGH|HIGH WIND.+)", replacement = "HIGH WIND", perl = TRUE) %>%
+    gsub(pattern = "^HIGH WIND.+", replacement = "HIGH WIND", perl = TRUE) %>%
+    gsub(pattern = "^HIGH$", replacement = "HIGH WIND", perl = TRUE) %>% ## see REMARKS
     gsub(pattern = "^HURRICANE.+", replacement = "HURRICANE", perl = TRUE) %>%
     gsub(pattern = "^HYPOTHERMIA.+", replacement = "HYPOTHERMIA", perl = TRUE) %>%
     gsub(pattern = "^ICE.+", replacement = "ICE", perl = TRUE) %>%
-    gsub(pattern = "vLANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE)
+    gsub(pattern = "^ICY ROADS.+", replacement = "ICE", perl = TRUE) %>%
+    gsub(pattern = "^LANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE) %>%
+    gsub(pattern = "^LIGHTNING.+", replacement = "LIGHTNING", perl = TRUE) %>%
+    gsub(pattern = "^RECORD/EXCESSIVE HEAT$", replacement = "RECORD HEAT", perl = TRUE) %>%
+    gsub(pattern = "^RIP CURRENT.+", replacement = "RIP CURRENT", perl = TRUE) %>%
+    gsub(pattern = "^SNOW.+", replacement = "SNOW", perl = TRUE) %>%
+    gsub(pattern = "^STORM SURGE.+", replacement = "STORM SURGE", perl = TRUE) %>%
+    gsub(pattern = "^STRONG WIND.+", replacement = "STRONG WIND", perl = TRUE) %>%
+    gsub(pattern = "^THUNDERSTORM.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^THUNDERTORM WINDS$", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^TSTM WIND.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^TORNADO.+", replacement = "TORNADO", perl = TRUE) %>%
+    gsub(pattern = "^TROPICAL STORM.+", replacement = "TROPICAL STORM", perl = TRUE) %>%
+    gsub(pattern = "^UNSEASONABLY WARM.+", replacement = "UNSEASONABLY WARM", perl = TRUE) %>%
+    gsub(pattern = "^URBAN AND SMALL STREAM FLOODIN$", 
+         replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^WATERSPOUT.+", replacement = "WATERSPOUT", perl = TRUE) %>%
+    gsub(pattern = "^WILD.+", replacement = "WILDFIRE", perl = TRUE) %>%
+    gsub(pattern = "^WIND.+", replacement = "WIND", perl = TRUE) %>%
+    gsub(pattern = "^WINTER STORM.+", replacement = "WINTER STORM", perl = TRUE) %>%
+    gsub(pattern = "^WINTER WEATHER.+", replacement = "WINTER WEATHER", perl = TRUE)
+  
+  output
+}
+
+calculateDMG <- function(value, exp){
+  output <- value
+  if(as.numeric(value) > 0) {
+    output <- switch(EXPR = exp,
+           B =, b = value * 1000000000,
+           M =, m = value * 1000000,
+           K =, k = value * 1000,
+           H =, h = value * 100,
+           -1)
+  }
   
   output
 }
@@ -83,15 +123,16 @@ data <- readCSVFile(localZipFile)
 ```
 
 ### Tidy Data
-```{r tidyDataHarmfull}
+```{r tidyDataHarmfull, cache=FALSE}
 
 tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   group_by(EVTYPE) %>%
-  summarise(TOTAL_FATALITIES = sum(FATALITIES), TOTAL_INJURIES = sum(INJURIES))
-
-
+  summarise(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)) %>%
+  arrange(desc(FATALITIES), desc(INJURIES)) %>%
+  head(n = 10) %>%
+  melt(id=c("EVTYPE"), variable.name = "TYPE")
 
 str(tidyDataHarmful)
 ```
@@ -100,11 +141,14 @@ str(tidyDataHarmful)
 summary(tidyDataHarmful)
 ```
 
-```{r tidyDataDMG}
+```{r tidyDataDMG, cache=FALSE}
 
-tidyDataDMG <- data %>%
-  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS)
-
+tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
+  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS) %>%
+  mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
+  mutate(FINALPROPDMG = calculateDMG(PROPDMG, PROPDMGEXP), 
+         FINALCROPDMG = calculateDMG(CROPDMG, CROPDMGEXP))
+  
 
 
 str(tidyDataDMG)
@@ -117,8 +161,23 @@ summary(tidyDataDMG)
 ##Results
 
 
-## Questions
+####Questions
 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+```{r plotHarmfull}
+
+plotHarmfull <- 
+    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value, fill = TYPE)) +
+    geom_bar(stat="identity", position="dodge") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Number of people", 
+        x = "Type of Events",
+      title = "TOP 10 of events more harmfull")
+    
+print(plotHarmfull)
+```
+
 
 2) Across the United States, which types of events have the greatest economic consequences?
 

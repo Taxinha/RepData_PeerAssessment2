@@ -26,9 +26,11 @@ library(dplyr)
 ```
 
 ```r
+library(reshape2)
+library(ggplot2)
+
 fileURL      <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 localZipFile <- "./data/storm_data.csv.bz2"
-## localFile    <- "./data/storm_data.csv"
 inputRmdFile <- "PA2.Rmd"
 ```
 
@@ -65,22 +67,60 @@ cleanupEVTYPE <- function(input){
     gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
     gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
     gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
-    gsub(pattern = "^DRY MIRCOBURST.+", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
-    gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^DROUGHT.+", replacement = "DROUGHT", perl = TRUE) %>%
+    gsub(pattern = "^DRY MIRCOBURST WINDS$", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
+    gsub(pattern = "^EXTREME COLD.+", replacement = "EXTREME COLD", perl = TRUE) %>%
     gsub(pattern = "^FLASH FLOOD.+", replacement = "FLASH FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WIND", replacement = "GUSTY WINDS", perl = TRUE) %>%
     gsub(pattern = "^HEAT WAVE.+", replacement = "HEAT WAVE", perl = TRUE) %>%
     gsub(pattern = "^HEAVY RAIN.+", replacement = "HEAVY RAIN", perl = TRUE) %>%
     gsub(pattern = "^HEAVY SNOW.+", replacement = "HEAVY SNOW", perl = TRUE) %>%
     gsub(pattern = "^FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^RIVER FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
     gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
     gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
-    gsub(pattern = "^(HIGH|HIGH WIND.+)", replacement = "HIGH WIND", perl = TRUE) %>%
+    gsub(pattern = "^HIGH WIND.+", replacement = "HIGH WIND", perl = TRUE) %>%
+    gsub(pattern = "^HIGH$", replacement = "HIGH WIND", perl = TRUE) %>% ## see REMARKS
     gsub(pattern = "^HURRICANE.+", replacement = "HURRICANE", perl = TRUE) %>%
     gsub(pattern = "^HYPOTHERMIA.+", replacement = "HYPOTHERMIA", perl = TRUE) %>%
     gsub(pattern = "^ICE.+", replacement = "ICE", perl = TRUE) %>%
-    gsub(pattern = "vLANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE)
+    gsub(pattern = "^ICY ROADS.+", replacement = "ICE", perl = TRUE) %>%
+    gsub(pattern = "^LANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE) %>%
+    gsub(pattern = "^LIGHTNING.+", replacement = "LIGHTNING", perl = TRUE) %>%
+    gsub(pattern = "^RECORD/EXCESSIVE HEAT$", replacement = "RECORD HEAT", perl = TRUE) %>%
+    gsub(pattern = "^RIP CURRENT.+", replacement = "RIP CURRENT", perl = TRUE) %>%
+    gsub(pattern = "^SNOW.+", replacement = "SNOW", perl = TRUE) %>%
+    gsub(pattern = "^STORM SURGE.+", replacement = "STORM SURGE", perl = TRUE) %>%
+    gsub(pattern = "^STRONG WIND.+", replacement = "STRONG WIND", perl = TRUE) %>%
+    gsub(pattern = "^THUNDERSTORM.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^THUNDERTORM WINDS$", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^TSTM WIND.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^TORNADO.+", replacement = "TORNADO", perl = TRUE) %>%
+    gsub(pattern = "^TROPICAL STORM.+", replacement = "TROPICAL STORM", perl = TRUE) %>%
+    gsub(pattern = "^UNSEASONABLY WARM.+", replacement = "UNSEASONABLY WARM", perl = TRUE) %>%
+    gsub(pattern = "^URBAN AND SMALL STREAM FLOODIN$", 
+         replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^WATERSPOUT.+", replacement = "WATERSPOUT", perl = TRUE) %>%
+    gsub(pattern = "^WILD.+", replacement = "WILDFIRE", perl = TRUE) %>%
+    gsub(pattern = "^WIND.+", replacement = "WIND", perl = TRUE) %>%
+    gsub(pattern = "^WINTER STORM.+", replacement = "WINTER STORM", perl = TRUE) %>%
+    gsub(pattern = "^WINTER WEATHER.+", replacement = "WINTER WEATHER", perl = TRUE)
+  
+  output
+}
+
+calculateDMG <- function(value, exp){
+  output <- value
+  #if(as.numeric(value) > 0) {
+  #  output <- switch(EXPR = exp,
+  #         B =, b = value * 1000000000,
+  #         M =, m = value * 1000000,
+  #         K =, k = value * 1000,
+  #         H =, h = value * 100,
+  #         -1)
+  #}
   
   output
 }
@@ -109,19 +149,19 @@ tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   group_by(EVTYPE) %>%
-  summarise(TOTAL_FATALITIES = sum(FATALITIES), TOTAL_INJURIES = sum(INJURIES))
-
-
+  summarise(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)) %>%
+  arrange(desc(FATALITIES), desc(INJURIES)) %>%
+  head(n = 10) %>%
+  melt(id=c("EVTYPE"), variable.name = "TYPE")
 
 str(tidyDataHarmful)
 ```
 
 ```
-## Classes 'tbl_df', 'tbl' and 'data.frame':	164 obs. of  3 variables:
-##  $ EVTYPE          : chr  "AVALANCHE" "BLACK ICE" "BLIZZARD" "BLOWING SNOW" ...
-##  $ TOTAL_FATALITIES: num  225 1 101 2 0 6 4 158 18 0 ...
-##  $ TOTAL_INJURIES  : num  170 24 805 14 2 7 2 60 342 4 ...
-##  - attr(*, "drop")= logi TRUE
+## 'data.frame':	20 obs. of  3 variables:
+##  $ EVTYPE: chr  "TORNADO" "EXCESSIVE HEAT" "FLASH FLOOD" "HEAT" ...
+##  $ TYPE  : Factor w/ 2 levels "FATALITIES","INJURIES": 1 1 1 1 1 1 1 1 1 1 ...
+##  $ value : num  5658 1903 1018 937 817 ...
 ```
 
 
@@ -130,33 +170,38 @@ summary(tidyDataHarmful)
 ```
 
 ```
-##     EVTYPE          TOTAL_FATALITIES  TOTAL_INJURIES    
-##  Length:164         Min.   :   0.00   Min.   :    0.00  
-##  Class :character   1st Qu.:   1.00   1st Qu.:    1.00  
-##  Mode  :character   Median :   2.00   Median :    5.50  
-##                     Mean   :  92.35   Mean   :  856.88  
-##                     3rd Qu.:  17.25   3rd Qu.:   73.25  
-##                     Max.   :5633.00   Max.   :91346.00
+##     EVTYPE                  TYPE        value      
+##  Length:20          FATALITIES:10   Min.   :  255  
+##  Class :character   INJURIES  :10   1st Qu.:  565  
+##  Mode  :character                   Median : 1245  
+##                                     Mean   : 6914  
+##                                     3rd Qu.: 5338  
+##                                     Max.   :91364
 ```
 
 
 ```r
-tidyDataDMG <- data %>%
-  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS)
-
+tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
+  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS) %>%
+  mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
+  mutate(FINALPROPDMG = calculateDMG(PROPDMG, PROPDMGEXP), 
+         FINALCROPDMG = calculateDMG(CROPDMG, CROPDMGEXP))
+  
 
 
 str(tidyDataDMG)
 ```
 
 ```
-## 'data.frame':	902297 obs. of  6 variables:
-##  $ EVTYPE    : Factor w/ 985 levels "   HIGH SURF ADVISORY",..: 834 834 834 834 834 834 834 834 834 834 ...
-##  $ PROPDMG   : num  25 2.5 25 2.5 2.5 2.5 2.5 2.5 25 25 ...
-##  $ PROPDMGEXP: Factor w/ 19 levels "","-","?","+",..: 17 17 17 17 17 17 17 17 17 17 ...
-##  $ CROPDMG   : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ CROPDMGEXP: Factor w/ 9 levels "","?","0","2",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ REMARKS   : Factor w/ 436781 levels "","\t","\t\t",..: 1 1 1 1 1 1 1 1 1 1 ...
+## 'data.frame':	245031 obs. of  8 variables:
+##  $ EVTYPE      : chr  "TORNADO" "TORNADO" "TORNADO" "TORNADO" ...
+##  $ PROPDMG     : num  25 2.5 25 2.5 2.5 2.5 2.5 2.5 25 25 ...
+##  $ PROPDMGEXP  : Factor w/ 19 levels "","-","?","+",..: 17 17 17 17 17 17 17 17 17 17 ...
+##  $ CROPDMG     : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ CROPDMGEXP  : Factor w/ 9 levels "","?","0","2",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ REMARKS     : Factor w/ 436781 levels "","\t","\t\t",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ FINALPROPDMG: num  25 2.5 25 2.5 2.5 2.5 2.5 2.5 25 25 ...
+##  $ FINALCROPDMG: num  0 0 0 0 0 0 0 0 0 0 ...
 ```
 
 
@@ -165,37 +210,54 @@ summary(tidyDataDMG)
 ```
 
 ```
-##                EVTYPE          PROPDMG          PROPDMGEXP    
-##  HAIL             :288661   Min.   :   0.00          :465934  
-##  TSTM WIND        :219940   1st Qu.:   0.00   K      :424665  
-##  THUNDERSTORM WIND: 82563   Median :   0.00   M      : 11330  
-##  TORNADO          : 60652   Mean   :  12.06   0      :   216  
-##  FLASH FLOOD      : 54277   3rd Qu.:   0.50   B      :    40  
-##  FLOOD            : 25326   Max.   :5000.00   5      :    28  
-##  (Other)          :170878                     (Other):    84  
-##     CROPDMG          CROPDMGEXP    
-##  Min.   :  0.000          :618413  
-##  1st Qu.:  0.000   K      :281832  
-##  Median :  0.000   M      :  1994  
-##  Mean   :  1.527   k      :    21  
-##  3rd Qu.:  0.000   0      :    19  
-##  Max.   :990.000   B      :     9  
-##                    (Other):     9  
-##                                            REMARKS      
-##                                                :287433  
-##                                                : 24013  
-##  Trees down.\n                                 :  1110  
-##  Several trees were blown down.\n              :   568  
-##  Trees were downed.\n                          :   446  
-##  Large trees and power lines were blown down.\n:   432  
-##  (Other)                                       :588295
+##     EVTYPE             PROPDMG          PROPDMGEXP        CROPDMG       
+##  Length:245031      Min.   :   0.00   K      :229057   Min.   :  0.000  
+##  Class :character   1st Qu.:   2.00   M      : 11319   1st Qu.:  0.000  
+##  Mode  :character   Median :   8.00          :  4357   Median :  0.000  
+##                     Mean   :  44.42   0      :   209   Mean   :  5.623  
+##                     3rd Qu.:  25.00   B      :    40   3rd Qu.:  0.000  
+##                     Max.   :5000.00   5      :    18   Max.   :990.000  
+##                                       (Other):    31                    
+##    CROPDMGEXP                                               REMARKS      
+##         :145037                                                 : 32374  
+##  K      : 97960                                                 :  7265  
+##  M      :  1982   Trees down.\n                                 :   628  
+##  k      :    21   Large trees and power lines were blown down.\n:   431  
+##  0      :    17   Several trees were blown down.\n              :   404  
+##  B      :     7   A few trees were blown down.\n                :   312  
+##  (Other):     7   (Other)                                       :203617  
+##   FINALPROPDMG      FINALCROPDMG    
+##  Min.   :   0.00   Min.   :  0.000  
+##  1st Qu.:   2.00   1st Qu.:  0.000  
+##  Median :   8.00   Median :  0.000  
+##  Mean   :  44.42   Mean   :  5.623  
+##  3rd Qu.:  25.00   3rd Qu.:  0.000  
+##  Max.   :5000.00   Max.   :990.000  
+## 
 ```
 
 ##Results
 
 
-## Questions
+####Questions
 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+
+```r
+plotHarmfull <- 
+    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value, fill = TYPE)) +
+    geom_bar(stat="identity", position="dodge") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Number of people", 
+        x = "Type of Events",
+      title = "TOP 10 of events more harmfull")
+    
+print(plotHarmfull)
+```
+
+![](./PA2_files/figure-html/plotHarmfull-1.png) 
+
 
 2) Across the United States, which types of events have the greatest economic consequences?
 
@@ -218,12 +280,14 @@ sessionInfo()
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-## [1] dplyr_0.3.0.2
+## [1] ggplot2_1.0.0 reshape2_1.4  dplyr_0.3.0.2
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] assertthat_0.1  DBI_0.3.1       digest_0.6.4    evaluate_0.5.5 
-##  [5] formatR_1.0     htmltools_0.2.6 knitr_1.8       lazyeval_0.1.9 
-##  [9] magrittr_1.0.1  parallel_3.1.2  Rcpp_0.11.3     rmarkdown_0.3.3
-## [13] stringr_0.6.2   tools_3.1.2     yaml_2.1.13
+##  [1] assertthat_0.1   colorspace_1.2-4 DBI_0.3.1        digest_0.6.4    
+##  [5] evaluate_0.5.5   formatR_1.0      grid_3.1.2       gtable_0.1.2    
+##  [9] htmltools_0.2.6  knitr_1.8        labeling_0.3     lazyeval_0.1.9  
+## [13] magrittr_1.0.1   MASS_7.3-35      munsell_0.4.2    parallel_3.1.2  
+## [17] plyr_1.8.1       proto_0.3-10     Rcpp_0.11.3      rmarkdown_0.3.3 
+## [21] scales_0.2.4     stringr_0.6.2    tools_3.1.2      yaml_2.1.13
 ```
 

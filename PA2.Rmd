@@ -50,6 +50,8 @@ readCSVFile <- function(fileName, ...){
 cleanupEVTYPE <- function(input){
   output <- input %>%
     toupper() %>%
+    gsub(pattern = "^\\t+", replacement = "", perl = TRUE) %>%
+    gsub(pattern = "^\\s+", replacement = "", perl = TRUE) %>%
     gsub(pattern = "^AVALANCE", replacement = "AVALANCHE", perl = TRUE) %>%
     gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
     gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
@@ -67,6 +69,7 @@ cleanupEVTYPE <- function(input){
     gsub(pattern = "^RIVER FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
     gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
+   # gsub(pattern = "^HAIL.+", replacement = "HAIL", perl = TRUE) %>%
     gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
     gsub(pattern = "^HIGH WIND.+", replacement = "HIGH WIND", perl = TRUE) %>%
     gsub(pattern = "^HIGH$", replacement = "HIGH WIND", perl = TRUE) %>% ## see REMARKS
@@ -100,15 +103,21 @@ cleanupEVTYPE <- function(input){
 
 calculateDMG <- function(value, exp){
   output <- value
-  if(as.numeric(value) > 0) {
-    output <- switch(EXPR = exp,
+  
+  if(as.numeric(value) > 0 && !is.null(exp)) {
+    # 0 == K ???
+    output <- switch(EXPR = as.character(exp),
            B =, b = value * 1000000000,
            M =, m = value * 1000000,
            K =, k = value * 1000,
            H =, h = value * 100,
-           -1)
+           "+" =, "-" = value,
+           "0" =, "2" =,"3" =, "6" =, "7" = value * 10 + as.numeric(exp), #Zero id 26267
+           "5" = (value * 10 +5 ) * 1000,     ## see remarks 135k for ID 49238
+           "4" = value * 1000000, ## see remark for ID 37895 (2.2M damages)
+           value)
   }
-  
+
   output
 }
 ```
@@ -123,6 +132,7 @@ data <- readCSVFile(localZipFile)
 ```
 
 ### Tidy Data
+#### Cleanup data for the most harmful event type
 ```{r tidyDataHarmfull, cache=FALSE}
 
 tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
@@ -141,15 +151,16 @@ str(tidyDataHarmful)
 summary(tidyDataHarmful)
 ```
 
+#### Cleanup data for the most expensive event type
 ```{r tidyDataDMG, cache=FALSE}
 
 tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
   select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
-  mutate(FINALPROPDMG = calculateDMG(PROPDMG, PROPDMGEXP), 
-         FINALCROPDMG = calculateDMG(CROPDMG, CROPDMGEXP))
-  
-
+  mutate(FINALPROPDMG = mapply(calculateDMG, PROPDMG, PROPDMGEXP), 
+         FINALCROPDMG = mapply(calculateDMG, CROPDMG, CROPDMGEXP)) %>%
+  group_by(EVTYPE) %>%
+  summarise(TOTALPRODDMG = sum(FINALPROPDMG), TOTALCROPDMG = sum(FINALCROPDMG))
 
 str(tidyDataDMG)
 ```

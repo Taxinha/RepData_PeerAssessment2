@@ -1,21 +1,23 @@
 ---
 title: "RepData - Peer Assessment 2"
 author: "Carlos Correia"
-date: "22 November 2014"
+date: "23 November 2014"
 output:
   html_document:
     keep_md: yes
 ---
 
-##Synopsis
+## Synopsis
 
-##Data Processing
+## Data Processing
 
 ### Loading Libraries and defining global variables
 ```{r library}
 library(dplyr)
 library(reshape2)
 library(ggplot2)
+library(grid)
+library(gridExtra)
 
 fileURL      <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 localZipFile <- "./data/storm_data.csv.bz2"
@@ -47,20 +49,28 @@ readCSVFile <- function(fileName, ...){
   read.csv(fileName, ...)
 }
 
+## Cleanup and normalize the EVTYPE
 cleanupEVTYPE <- function(input){
   output <- input %>%
     toupper() %>%
     gsub(pattern = "^\\t+", replacement = "", perl = TRUE) %>%
     gsub(pattern = "^\\s+", replacement = "", perl = TRUE) %>%
-    gsub(pattern = "^AVALANCE", replacement = "AVALANCHE", perl = TRUE) %>%
+    gsub(pattern = "^AVALANCE.+", replacement = "AVALANCHE", perl = TRUE) %>%
+    gsub(pattern = "^BLIZZARD.+", replacement = "BLIZZARD", perl = TRUE) %>%
     gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^COASTAL  FLOODING/EROSION$", replacement = "COASTAL FLOOD", perl = TRUE) %>%
     gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
     gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^COOL AND WET$", replacement = "COLD", perl = TRUE) %>%
     gsub(pattern = "^DROUGHT.+", replacement = "DROUGHT", perl = TRUE) %>%
     gsub(pattern = "^DRY MIRCOBURST WINDS$", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
+    gsub(pattern = "^DUST DEVIL.+", replacement = "DUST DEVIL", perl = TRUE) %>%
+    gsub(pattern = "^DUST STORM.+", replacement = "DUST STORM", perl = TRUE) %>%
     gsub(pattern = "^EXTREME COLD.+", replacement = "EXTREME COLD", perl = TRUE) %>%
+    gsub(pattern = "^EXTREME WIND CHILL$", replacement = "EXTREME WINDCHILL", perl = TRUE) %>%
     gsub(pattern = "^FLASH FLOOD.+", replacement = "FLASH FLOOD", perl = TRUE) %>%
     gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
+    gsub(pattern = "^FREEZING.+", replacement = "FREEZE", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WIND", replacement = "GUSTY WINDS", perl = TRUE) %>%
     gsub(pattern = "^HEAT WAVE.+", replacement = "HEAT WAVE", perl = TRUE) %>%
     gsub(pattern = "^HEAVY RAIN.+", replacement = "HEAVY RAIN", perl = TRUE) %>%
@@ -68,9 +78,11 @@ cleanupEVTYPE <- function(input){
     gsub(pattern = "^FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
     gsub(pattern = "^RIVER FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
     gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
+    gsub(pattern = "^FROST.+", replacement = "FROST", perl = TRUE) %>%
     gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
-   # gsub(pattern = "^HAIL.+", replacement = "HAIL", perl = TRUE) %>%
+    gsub(pattern = "^HAIL.+", replacement = "HAIL", perl = TRUE) %>%
     gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
+    gsub(pattern = "^HIGH SURF.+", replacement = "HIGH SURF", perl = TRUE) %>%
     gsub(pattern = "^HIGH WIND.+", replacement = "HIGH WIND", perl = TRUE) %>%
     gsub(pattern = "^HIGH$", replacement = "HIGH WIND", perl = TRUE) %>% ## see REMARKS
     gsub(pattern = "^HURRICANE.+", replacement = "HURRICANE", perl = TRUE) %>%
@@ -90,6 +102,9 @@ cleanupEVTYPE <- function(input){
     gsub(pattern = "^TORNADO.+", replacement = "TORNADO", perl = TRUE) %>%
     gsub(pattern = "^TROPICAL STORM.+", replacement = "TROPICAL STORM", perl = TRUE) %>%
     gsub(pattern = "^UNSEASONABLY WARM.+", replacement = "UNSEASONABLY WARM", perl = TRUE) %>%
+    gsub(pattern = "^URBAN FLOOD.+", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^URBAN SMALL.*", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^URBAN/SMALL STREAM.*", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
     gsub(pattern = "^URBAN AND SMALL STREAM FLOODIN$", 
          replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
     gsub(pattern = "^WATERSPOUT.+", replacement = "WATERSPOUT", perl = TRUE) %>%
@@ -101,11 +116,11 @@ cleanupEVTYPE <- function(input){
   output
 }
 
+## Calculates the DMG values by checking the EXP and update the DMG value
 calculateDMG <- function(value, exp){
   output <- value
   
   if(as.numeric(value) > 0 && !is.null(exp)) {
-    # 0 == K ???
     output <- switch(EXPR = as.character(exp),
            B =, b = value * 1000000000,
            M =, m = value * 1000000,
@@ -127,22 +142,27 @@ calculateDMG <- function(value, exp){
 downloadAndExtractZipFile(localZipFile)
 
 data <- readCSVFile(localZipFile)
+```
 
-## summary(data)
+### Quick Data Summary
+```{r summaryRawData}
+str(data)
+summary(data)
 ```
 
 ### Tidy Data
-#### Cleanup data for the most harmful event type
+#### Cleanup data for the most harmful Storm Event Type
 ```{r tidyDataHarmfull, cache=FALSE}
-
+## From the RawData we remove the rows that don't have injuries and fatalities, then select the columns EVTYPE, FATALITIES and INJURIES to have a reduced data set. After that we cleanup the EVTYPE column, group by the EVTYPE and calculate the the total FATALITIES and INJURIES per EVTYPE. Then we sort descendent the FATALITIES & INJURIES and pick the TOP 20
+### MELT??????
 tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   group_by(EVTYPE) %>%
   summarise(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)) %>%
   arrange(desc(FATALITIES), desc(INJURIES)) %>%
-  head(n = 10) %>%
-  melt(id=c("EVTYPE"), variable.name = "TYPE")
+  head(n = 20) %>%
+  melt(id = c("EVTYPE"), variable.name = "TYPE")
 
 str(tidyDataHarmful)
 ```
@@ -151,16 +171,18 @@ str(tidyDataHarmful)
 summary(tidyDataHarmful)
 ```
 
-#### Cleanup data for the most expensive event type
+#### Cleanup data for the most expensive Storm Event Type
 ```{r tidyDataDMG, cache=FALSE}
-
+## From the RawData we remove the rows that don't have PROPERTY and CROP Damage, then select the columns EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG and CROPDMGEXP to have a reduced data set. After that we cleanup the EVTYPE column, calculate the real monetary damage for PROPERTY and CROP, group by the EVTYPE and calculate the the total monetary damage for PROPERTY and CROP per EVTYPE.
 tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
-  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, REMARKS) %>%
+  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   mutate(FINALPROPDMG = mapply(calculateDMG, PROPDMG, PROPDMGEXP), 
          FINALCROPDMG = mapply(calculateDMG, CROPDMG, CROPDMGEXP)) %>%
   group_by(EVTYPE) %>%
-  summarise(TOTALPRODDMG = sum(FINALPROPDMG), TOTALCROPDMG = sum(FINALCROPDMG))
+  summarise(TOTALPRODDMG = sum(FINALPROPDMG), 
+            TOTALCROPDMG = sum(FINALCROPDMG))
+##            TOTALDMG = TOTALPRODDMG + TOTALCROPDMG)
 
 str(tidyDataDMG)
 ```
@@ -169,22 +191,21 @@ str(tidyDataDMG)
 summary(tidyDataDMG)
 ```
 
-##Results
+## Results
 
 
 ####Questions
 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 
-```{r plotHarmfull}
-
+```{r plotHarmfull, fig.width=9 }
 plotHarmfull <- 
-    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value, fill = TYPE)) +
+    ggplot(tidyDataHarmful, aes(x = reorder(EVTYPE, -value), y = value/1000, fill = TYPE)) +
     geom_bar(stat="identity", position="dodge") +
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
-        y = "Number of people", 
-        x = "Type of Events",
-      title = "TOP 10 of events more harmfull")
+        y = "Number of people (milion)", 
+        x = "Storm Events",
+      title = "Impact of Storm Events on the US Population Health - TOP 20")
     
 print(plotHarmfull)
 ```
@@ -192,10 +213,54 @@ print(plotHarmfull)
 
 2) Across the United States, which types of events have the greatest economic consequences?
 
+```{r plotDMGPROP}
 
+plotPropDMGData <- tidyDataDMG %>%
+  select(EVTYPE, TOTALPRODDMG) %>%
+  arrange(desc(TOTALPRODDMG)) %>%
+  head(n=10)
 
-### Software Details used on this project
-```{r softwareDetails}
-sessionInfo()
+plotCropDMGData <- tidyDataDMG %>%
+  select(EVTYPE, TOTALCROPDMG) %>%
+  arrange(desc(TOTALCROPDMG)) %>%
+  head(n=10)
+
+plotTotalDMGData <- tidyDataDMG %>%
+  arrange(desc(TOTALPRODDMG), desc(TOTALCROPDMG)) %>%
+  head(n=20) %>%
+  melt(id=c("EVTYPE"), variable.name = "TYPE")
+
+plotDMGPROP <- 
+    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -TOTALPRODDMG), y = TOTALPRODDMG)) +
+    geom_bar(stat="identity", fill="blue") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Dollares", 
+        x = "Storm Events",
+      title = "TOP 10 of events more costely")
+
+plotCROPDMG <- 
+    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -TOTALCROPDMG), y = TOTALCROPDMG)) +
+    geom_bar(stat="identity", fill="blue") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Dollares", 
+        x = "Storm Events",
+      title = "TOP 10 of events more costely")
+
+plotTOTALDMG <- 
+    ggplot(plotTotalDMGData, aes(x = reorder(EVTYPE, -value), y = value, fill = TYPE)) +
+    geom_bar(stat="identity") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Dollares", 
+        x = "Storm Events",
+      title = "TOP 20 of events more costely")
+
+grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2)
+
+print(plotTOTALDMG)
 ```
+
+
 

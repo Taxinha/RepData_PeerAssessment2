@@ -1,9 +1,11 @@
 # Weather Events impact on People Health and Economics in the US
 Carlos Correia  
-23 November 2014  
+24 November 2014  
 
 ## Synopsis
-
+Weather Events have an impact on the Population Health as well on country Economics.  
+The goal of this analysis is to identify which Weather Events are more harmful for population health and which Weather Events have the greatest economic consequences.  
+For this analysis we use data from the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database with events from the year 1950 until end of November 2011.
 
 ## Data Processing
 
@@ -32,12 +34,15 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 
+## URL for the NOAA file data
 fileURL      <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 localZipFile <- "./data/storm_data.csv.bz2"
 inputRmdFile <- "PA2.Rmd"
 ```
 
 ### Helper functions
+#### downloadAndExtractZipFile(fileName)
+The `downloadAndExtractZipFile` function will verify if the data file (`fileName`) is available, if not will download the file using _CURL_ method. 
 
 ```r
 ## Download and Extract Zip data file
@@ -52,7 +57,12 @@ downloadAndExtractZipFile <- function(fileName){
     download.file(fileURL, destfile = fileName, method = "curl")
   }
 }
+```
 
+#### readCSVFile(fileName, ...)
+The `readCSVFile` function will check if the data file exists (`fileName`) and read the data using `read.csv` R function
+
+```r
 ## Reads the CSV data file
 readCSVFile <- function(fileName, ...){
   if(! file.exists(fileName)){
@@ -62,7 +72,12 @@ readCSVFile <- function(fileName, ...){
   print(paste("Reading file ", fileName))
   read.csv(fileName, ...)
 }
+```
 
+#### cleanupEVTYPE(input)
+The `cleanupEVTYPE` will receive as `input` the __EVTYPE__ from the NOAA data source and apply some normalization
+
+```r
 ## Cleanup and normalize the EVTYPE
 cleanupEVTYPE <- function(input){
   output <- input %>%
@@ -129,7 +144,18 @@ cleanupEVTYPE <- function(input){
   
   output
 }
+```
 
+#### calculateDMG(value, exp)
+The `calculateDMG` function will calculate the monetary value of the damage using the `value` and `exp` as input. The `exp` can be:
+
+- B or b: Billion
+- M or m: Million
+- K or k: Thousands
+- H or h: Hundreds
+- Any other option is ignored
+
+```r
 ## Calculates the DMG values by checking the EXP and update the DMG value
 calculateDMG <- function(value, exp){
   output <- value
@@ -140,7 +166,6 @@ calculateDMG <- function(value, exp){
            M =, m = value * 1000000,
            K =, k = value * 1000,
            H =, h = value * 100,
-           "+" =, "-" = value,
            "0" =, "2" =,"3" =, "6" =, "7" = value * 10 + as.numeric(exp), #Zero id 26267
            "5" = (value * 10 +5 ) * 1000,     ## see remarks 135k for ID 49238
            "4" = value * 1000000, ## see remark for ID 37895 (2.2M damages)
@@ -151,7 +176,9 @@ calculateDMG <- function(value, exp){
 }
 ```
 
-### Load Raw Data
+### Loading Raw Data
+Starying by calling the `downloadAndExtractZipFile` function to download the [NOAA data source][1] in case we don't have the file locally.  
+Then we call the `readCSVFile` function to read the file and load into `data` dataset variable
 
 ```r
 downloadAndExtractZipFile(localZipFile)
@@ -162,8 +189,6 @@ data <- readCSVFile(localZipFile)
 ```
 ## [1] "Reading file  ./data/storm_data.csv.bz2"
 ```
-
-### Quick Data Summary
 
 ```r
 str(data)
@@ -210,67 +235,47 @@ str(data)
 ##  $ REFNUM    : num  1 2 3 4 5 6 7 8 9 10 ...
 ```
 
+### Cleaning the Data
+The raw dataset has 37 columns, but for this analysis we only need the following columns: 
+
+- __EVTYPE__ (_factor_): Weather Event Type
+- __FATALITIES__ (_num_): Number of Fatalities
+- __INJURIES__ (_num_): Number of Injuries
+- __PROPDMG__ (_num_): Value for the property damage
+- __PROPDMGEXP__ (_factor_): Exponential  for property damage (Billions, Millions, Thousands, Hundreds)
+- __CROPDMG__ (_num_): Value for the crop damage
+- __CROPDMGEXP__ (_factor_): Exponential  for crop damage (Billions, Millions, Thousands, Hundreds)
+
+
 ```r
-summary(data)
+tidyData <- data[, c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+str(tidyData)
 ```
 
 ```
-##     STATE__                  BGN_DATE             BGN_TIME     
-##  Min.   : 1.0   5/25/2011 0:00:00:  1202   12:00:00 AM: 10163  
-##  1st Qu.:19.0   4/27/2011 0:00:00:  1193   06:00:00 PM:  7350  
-##  Median :30.0   6/9/2011 0:00:00 :  1030   04:00:00 PM:  7261  
-##  Mean   :31.2   5/30/2004 0:00:00:  1016   05:00:00 PM:  6891  
-##  3rd Qu.:45.0   4/4/2011 0:00:00 :  1009   12:00:00 PM:  6703  
-##  Max.   :95.0   4/2/2006 0:00:00 :   981   03:00:00 PM:  6700  
-##                 (Other)          :895866   (Other)    :857229  
-##    TIME_ZONE          COUNTY           COUNTYNAME         STATE       
-##  CST    :547493   Min.   :  0.0   JEFFERSON :  7840   TX     : 83728  
-##  EST    :245558   1st Qu.: 31.0   WASHINGTON:  7603   KS     : 53440  
-##  MST    : 68390   Median : 75.0   JACKSON   :  6660   OK     : 46802  
-##  PST    : 28302   Mean   :100.6   FRANKLIN  :  6256   MO     : 35648  
-##  AST    :  6360   3rd Qu.:131.0   LINCOLN   :  5937   IA     : 31069  
-##  HST    :  2563   Max.   :873.0   MADISON   :  5632   NE     : 30271  
-##  (Other):  3631                   (Other)   :862369   (Other):621339  
-##                EVTYPE         BGN_RANGE           BGN_AZI      
-##  HAIL             :288661   Min.   :   0.000          :547332  
-##  TSTM WIND        :219940   1st Qu.:   0.000   N      : 86752  
-##  THUNDERSTORM WIND: 82563   Median :   0.000   W      : 38446  
-##  TORNADO          : 60652   Mean   :   1.484   S      : 37558  
-##  FLASH FLOOD      : 54277   3rd Qu.:   1.000   E      : 33178  
-##  FLOOD            : 25326   Max.   :3749.000   NW     : 24041  
-##  (Other)          :170878                      (Other):134990  
-##          BGN_LOCATI                  END_DATE             END_TIME     
-##               :287743                    :243411              :238978  
-##  COUNTYWIDE   : 19680   4/27/2011 0:00:00:  1214   06:00:00 PM:  9802  
-##  Countywide   :   993   5/25/2011 0:00:00:  1196   05:00:00 PM:  8314  
-##  SPRINGFIELD  :   843   6/9/2011 0:00:00 :  1021   04:00:00 PM:  8104  
-##  SOUTH PORTION:   810   4/4/2011 0:00:00 :  1007   12:00:00 PM:  7483  
-##  NORTH PORTION:   784   5/30/2004 0:00:00:   998   11:59:00 PM:  7184  
-##  (Other)      :591444   (Other)          :653450   (Other)    :622432  
-##    COUNTY_END COUNTYENDN       END_RANGE           END_AZI      
-##  Min.   :0    Mode:logical   Min.   :  0.0000          :724837  
-##  1st Qu.:0    NA's:902297    1st Qu.:  0.0000   N      : 28082  
-##  Median :0                   Median :  0.0000   S      : 22510  
-##  Mean   :0                   Mean   :  0.9862   W      : 20119  
-##  3rd Qu.:0                   3rd Qu.:  0.0000   E      : 20047  
-##  Max.   :0                   Max.   :925.0000   NE     : 14606  
-##                                                 (Other): 72096  
-##            END_LOCATI         LENGTH              WIDTH         
-##                 :499225   Min.   :   0.0000   Min.   :   0.000  
-##  COUNTYWIDE     : 19731   1st Qu.:   0.0000   1st Qu.:   0.000  
-##  SOUTH PORTION  :   833   Median :   0.0000   Median :   0.000  
-##  NORTH PORTION  :   780   Mean   :   0.2301   Mean   :   7.503  
-##  CENTRAL PORTION:   617   3rd Qu.:   0.0000   3rd Qu.:   0.000  
-##  SPRINGFIELD    :   575   Max.   :2315.0000   Max.   :4400.000  
-##  (Other)        :380536                                         
-##        F               MAG            FATALITIES          INJURIES        
-##  Min.   :0.0      Min.   :    0.0   Min.   :  0.0000   Min.   :   0.0000  
-##  1st Qu.:0.0      1st Qu.:    0.0   1st Qu.:  0.0000   1st Qu.:   0.0000  
-##  Median :1.0      Median :   50.0   Median :  0.0000   Median :   0.0000  
-##  Mean   :0.9      Mean   :   46.9   Mean   :  0.0168   Mean   :   0.1557  
-##  3rd Qu.:1.0      3rd Qu.:   75.0   3rd Qu.:  0.0000   3rd Qu.:   0.0000  
-##  Max.   :5.0      Max.   :22000.0   Max.   :583.0000   Max.   :1700.0000  
-##  NA's   :843563                                                           
+## 'data.frame':	902297 obs. of  7 variables:
+##  $ EVTYPE    : Factor w/ 985 levels "   HIGH SURF ADVISORY",..: 834 834 834 834 834 834 834 834 834 834 ...
+##  $ FATALITIES: num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ INJURIES  : num  15 0 2 2 2 6 1 0 14 0 ...
+##  $ PROPDMG   : num  25 2.5 25 2.5 2.5 2.5 2.5 2.5 25 25 ...
+##  $ PROPDMGEXP: Factor w/ 19 levels "","-","?","+",..: 17 17 17 17 17 17 17 17 17 17 ...
+##  $ CROPDMG   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ CROPDMGEXP: Factor w/ 9 levels "","?","0","2",..: 1 1 1 1 1 1 1 1 1 1 ...
+```
+
+```r
+summary(tidyData)
+```
+
+```
+##                EVTYPE         FATALITIES          INJURIES        
+##  HAIL             :288661   Min.   :  0.0000   Min.   :   0.0000  
+##  TSTM WIND        :219940   1st Qu.:  0.0000   1st Qu.:   0.0000  
+##  THUNDERSTORM WIND: 82563   Median :  0.0000   Median :   0.0000  
+##  TORNADO          : 60652   Mean   :  0.0168   Mean   :   0.1557  
+##  FLASH FLOOD      : 54277   3rd Qu.:  0.0000   3rd Qu.:   0.0000  
+##  FLOOD            : 25326   Max.   :583.0000   Max.   :1700.0000  
+##  (Other)          :170878                                         
 ##     PROPDMG          PROPDMGEXP        CROPDMG          CROPDMGEXP    
 ##  Min.   :   0.00          :465934   Min.   :  0.000          :618413  
 ##  1st Qu.:   0.00   K      :424665   1st Qu.:  0.000   K      :281832  
@@ -278,48 +283,14 @@ summary(data)
 ##  Mean   :  12.06   0      :   216   Mean   :  1.527   k      :    21  
 ##  3rd Qu.:   0.50   B      :    40   3rd Qu.:  0.000   0      :    19  
 ##  Max.   :5000.00   5      :    28   Max.   :990.000   B      :     9  
-##                    (Other):    84                     (Other):     9  
-##       WFO                                       STATEOFFIC    
-##         :142069                                      :248769  
-##  OUN    : 17393   TEXAS, North                       : 12193  
-##  JAN    : 13889   ARKANSAS, Central and North Central: 11738  
-##  LWX    : 13174   IOWA, Central                      : 11345  
-##  PHI    : 12551   KANSAS, Southwest                  : 11212  
-##  TSA    : 12483   GEORGIA, North and Central         : 11120  
-##  (Other):690738   (Other)                            :595920  
-##                                                                                                                                                                                                     ZONENAMES     
-##                                                                                                                                                                                                          :594029  
-##                                                                                                                                                                                                          :205988  
-##  GREATER RENO / CARSON CITY / M - GREATER RENO / CARSON CITY / M                                                                                                                                         :   639  
-##  GREATER LAKE TAHOE AREA - GREATER LAKE TAHOE AREA                                                                                                                                                       :   592  
-##  JEFFERSON - JEFFERSON                                                                                                                                                                                   :   303  
-##  MADISON - MADISON                                                                                                                                                                                       :   302  
-##  (Other)                                                                                                                                                                                                 :100444  
-##     LATITUDE      LONGITUDE        LATITUDE_E     LONGITUDE_    
-##  Min.   :   0   Min.   :-14451   Min.   :   0   Min.   :-14455  
-##  1st Qu.:2802   1st Qu.:  7247   1st Qu.:   0   1st Qu.:     0  
-##  Median :3540   Median :  8707   Median :   0   Median :     0  
-##  Mean   :2875   Mean   :  6940   Mean   :1452   Mean   :  3509  
-##  3rd Qu.:4019   3rd Qu.:  9605   3rd Qu.:3549   3rd Qu.:  8735  
-##  Max.   :9706   Max.   : 17124   Max.   :9706   Max.   :106220  
-##  NA's   :47                      NA's   :40                     
-##                                            REMARKS           REFNUM      
-##                                                :287433   Min.   :     1  
-##                                                : 24013   1st Qu.:225575  
-##  Trees down.\n                                 :  1110   Median :451149  
-##  Several trees were blown down.\n              :   568   Mean   :451149  
-##  Trees were downed.\n                          :   446   3rd Qu.:676723  
-##  Large trees and power lines were blown down.\n:   432   Max.   :902297  
-##  (Other)                                       :588295
+##                    (Other):    84                     (Other):     9
 ```
 
-### Tidy Data
-#### Cleanup data for the most harmful Storm Event Type
+#### TidyData for Weather Events impacts on Population Health
+Using the `tidyData` dataset the the input, we ignore the rows where we don't have Fatalities and Injuries since we want to get the Weather Events with most Health impact. After we select only the 3 columns we need - `EVTYPE`, `FATALITIES` and `INJURIES`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function, group the data by `EVTYPE` and then calculate the sum of Fatalities and Injures for each Weather Event (`EVTYPE`). Since we want the most impact, we sort the total Fatalities and Injures descendent, pick the top 10 and apply the `melt` R function to prepare the data for the plot.
 
 ```r
-## From the RawData we remove the rows that don't have injuries and fatalities, then select the columns EVTYPE, FATALITIES and INJURIES to have a reduced data set. After that we cleanup the EVTYPE column, group by the EVTYPE and calculate the the total FATALITIES and INJURIES per EVTYPE. Then we sort descendent the FATALITIES & INJURIES and pick the TOP 20
-### MELT??????
-tidyDataHarmful <- data[!(data$FATALITIES == 0 & data$INJURIES == 0), ] %>%
+tidyDataHarmful <- tidyData[!(tidyData$FATALITIES == 0 & tidyData$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   group_by(EVTYPE) %>%
@@ -353,39 +324,11 @@ summary(tidyDataHarmful)
 ##                                   Max.   :91364
 ```
 
-```r
-tidyDataHarmful
-```
-
-```
-##               EVTYPE     Type value
-## 1            TORNADO Fatality  5658
-## 2     EXCESSIVE HEAT Fatality  1903
-## 3        FLASH FLOOD Fatality  1018
-## 4               HEAT Fatality   937
-## 5          LIGHTNING Fatality   817
-## 6  THUNDERSTORM WIND Fatality   711
-## 7        RIP CURRENT Fatality   577
-## 8              FLOOD Fatality   497
-## 9          HIGH WIND Fatality   293
-## 10      EXTREME COLD Fatality   287
-## 11           TORNADO   Injury 91364
-## 12    EXCESSIVE HEAT   Injury  6525
-## 13       FLASH FLOOD   Injury  1785
-## 14              HEAT   Injury  2100
-## 15         LIGHTNING   Injury  5232
-## 16 THUNDERSTORM WIND   Injury  9508
-## 17       RIP CURRENT   Injury   529
-## 18             FLOOD   Injury  6807
-## 19         HIGH WIND   Injury  1472
-## 20      EXTREME COLD   Injury   255
-```
-
-#### Cleanup data for the most expensive Storm Event Type
+#### TidyData for Weather Events impacts on Economics
+From the `tidyData`dataset, we ignore the rows where there isn't Property nor Crop damage value because we want to get the Weather Events with most Economical impact. After we select only the 5 columns we need - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function. In other to get the real monetary value for Property or Crop damage, we call the function `calculateDMG`. Then we group the data by `EVTYPE` and then calculate the total of Propertie and Crop monetary damage for each Weather Event (`EVTYPE`).
 
 ```r
-## From the RawData we remove the rows that don't have PROPERTY and CROP Damage, then select the columns EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG and CROPDMGEXP to have a reduced data set. After that we cleanup the EVTYPE column, calculate the real monetary damage for PROPERTY and CROP, group by the EVTYPE and calculate the the total monetary damage for PROPERTY and CROP per EVTYPE.
-tidyDataDMG <- data[!(data$PROPDMG == 0 & data$CROPDMG == 0), ] %>%
+tidyDataDMG <- tidyData[!(tidyData$PROPDMG == 0 & tidyData$CROPDMG == 0), ] %>%
   select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %>%
   mutate(FINALPROPDMG = mapply(calculateDMG, PROPDMG, PROPDMGEXP), 
@@ -421,10 +364,38 @@ summary(tidyDataDMG)
 ```
 
 ## Results
+### Weather Event Impact on US Population Health
+Data from the dataset of the most impact Weather Event of Population Health
 
+```r
+tidyDataHarmful
+```
 
-### 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+```
+##               EVTYPE     Type value
+## 1            TORNADO Fatality  5658
+## 2     EXCESSIVE HEAT Fatality  1903
+## 3        FLASH FLOOD Fatality  1018
+## 4               HEAT Fatality   937
+## 5          LIGHTNING Fatality   817
+## 6  THUNDERSTORM WIND Fatality   711
+## 7        RIP CURRENT Fatality   577
+## 8              FLOOD Fatality   497
+## 9          HIGH WIND Fatality   293
+## 10      EXTREME COLD Fatality   287
+## 11           TORNADO   Injury 91364
+## 12    EXCESSIVE HEAT   Injury  6525
+## 13       FLASH FLOOD   Injury  1785
+## 14              HEAT   Injury  2100
+## 15         LIGHTNING   Injury  5232
+## 16 THUNDERSTORM WIND   Injury  9508
+## 17       RIP CURRENT   Injury   529
+## 18             FLOOD   Injury  6807
+## 19         HIGH WIND   Injury  1472
+## 20      EXTREME COLD   Injury   255
+```
 
+Now we plot to show the which Weather Event has the bigger impact on the US Population Health
 
 ```r
 plotHarmfull <- 
@@ -433,16 +404,32 @@ plotHarmfull <-
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
         y = "Number of people (thousands)", 
-        x = "Weather Events",
+        x = "",
       title = "Impact of Weather Events on the US Population Health")
     
 print(plotHarmfull)
 ```
 
-![](./PA2_files/figure-html/plotHarmfull-1.png) 
+![Fig. 1) Top 10 Weather Events on Population Health](./PA2_files/figure-html/plotHarmfull-1.png) 
+
+### Weather Events Impact on Economic
 
 
-### 2) Across the United States, which types of events have the greatest economic consequences?
+```r
+head(tidyDataDMG)
+```
+
+```
+## Source: local data frame [6 x 3]
+## 
+##                   EVTYPE Property     Crop
+## 1                      ?     5000        0
+## 2    AGRICULTURAL FREEZE        0 28820000
+## 3          APACHE COUNTY     5000        0
+## 4 ASTRONOMICAL HIGH TIDE  9425000        0
+## 5  ASTRONOMICAL LOW TIDE   320000        0
+## 6              AVALANCHE  3721800        0
+```
 
 
 ```r
@@ -470,6 +457,7 @@ plotPropDMGData
 ## 10      WINTER STORM   6748997265
 ```
 
+
 ```r
 plotCropDMGData <- tidyDataDMG %>%
   select(EVTYPE, Crop) %>%
@@ -494,6 +482,39 @@ plotCropDMGData
 ## 9  THUNDERSTORM WIND  1225459732
 ## 10             FROST  1160186000
 ```
+
+
+
+```r
+plotDMGPROP <- 
+    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -Property), 
+                                y = Property/10^9)) +
+    geom_bar(stat="identity", fill="blue") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Billions of Dollars", 
+        x = "",
+      title = "Property")
+
+plotCROPDMG <- 
+    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -Crop), 
+                                y = Crop/10^9)) +
+    geom_bar(stat="identity", fill="blue") +
+    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+    labs( 
+        y = "Billions of Dollars", 
+        x = "",
+      title = "Crop")
+
+grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
+             main = "Economic impact of Weather Events in the US")
+```
+
+![Fig. 2) Top 10 Weather Events Economical Impact on (left) Property (right) Crop](./PA2_files/figure-html/plotDMGPROPAndCROP-1.png) 
+
+
+
+
 
 ```r
 plotTotalDMGData <- tidyDataDMG %>%
@@ -548,36 +569,7 @@ plotTotalDMGData
 ## 40             TYPHOON     Crop       825000
 ```
 
-
-
-
-```r
-plotDMGPROP <- 
-    ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -Property), 
-                                y = Property/10^9)) +
-    geom_bar(stat="identity", fill="blue") +
-    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
-    labs( 
-        y = "Billions of Dollars", 
-        x = "Weather Events",
-      title = "Property")
-
-plotCROPDMG <- 
-    ggplot(plotCropDMGData, aes(x = reorder(EVTYPE, -Crop), 
-                                y = Crop/10^9)) +
-    geom_bar(stat="identity", fill="blue") +
-    theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
-    labs( 
-        y = "Billions of Dollars", 
-        x = "Weather Events",
-      title = "Crop")
-
-grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
-             main = "Economic impact of Weather Events in the US")
-```
-
-![](./PA2_files/figure-html/plotDMGPROPAndCROP-1.png) 
-
+We plot to show which Weather Event has the most Impact on country Economic (Property and Crop)
 
 ```r
 plotTOTALDMG <- 
@@ -587,11 +579,19 @@ plotTOTALDMG <-
     theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
     labs( 
         y = "Billions of Dollars", 
-        x = "Weather Events",
+        x = "",
       title = "Economic impact of Weather Events in the US")
 
 print(plotTOTALDMG)
 ```
 
-![](./PA2_files/figure-html/plotTotalDMG-1.png) 
+![Fig. 3) Top 20 Weather Events Economical Impact (Property and Crop)](./PA2_files/figure-html/plotTotalDMG-1.png) 
 
+## Conclusions
+With this analysis we conclude that:
+
+* TORNADO is the Weather Event with the biggest impact on the US Population Health
+* FLOOD is the Weather Event with biggest Economical impact on the Properties
+* DROUGHT is the Weather Event with biggest Economical impact on the Crop
+
+[1]: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2 "NOAA Data Source"

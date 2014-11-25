@@ -131,7 +131,7 @@ readCSVFile &lt;- function(fileName, ...){
   print(paste(&quot;Reading file &quot;, fileName))
   read.csv(fileName, ...)
 }</code></pre>
-<p>The resulting dataset is summarised below.</p>
+<p>The resulting dataset is summarized below.</p>
 <pre class="r"><code>downloadAndExtractZipFile(localZipFile)
 
 data &lt;- readCSVFile(localZipFile)</code></pre>
@@ -285,7 +285,7 @@ cleanupEVTYPE &lt;- function(input){
 <div id="tidydata-for-analysing-the-impact-of-weather-events-on-population-health" class="section level4">
 <h4>TidyData for analysing the impact of weather events on Population Health</h4>
 <p>To create the tidy dataset for the analysis of impact on population health rows that don’t have fatalities or injuries were ignored. Similarly, only columns related to population health were included - <code>EVTYPE</code>, <code>FATALITIES</code> and <code>INJURIES</code>. The actual cleanup function for <code>EVTYPE</code> was also applied at this stage.</p>
-<p>The data was then grouped by <code>EVTYPE</code> and the sum of fatalities and injuries was calculated for each event type. Since we are looking at the events with the most impact, the total sum was sorted in descending order. The top 10 was then picked from the descending dataset and the <code>melt</code> function was applied to prepare the data for ploting.</p>
+<p>The data was then grouped by <code>EVTYPE</code> and the sum of fatalities and injuries was calculated for each event type. Since we are looking at the events with the most impact, the total sum was sorted in descending order. The top 10 was then picked from the descending dataset and the <code>melt</code> function was applied to prepare the data for plotting.</p>
 <pre class="r"><code>tidyDataHarmful &lt;- tidyData[!(tidyData$FATALITIES == 0 &amp; tidyData$INJURIES == 0), ] %&gt;%
   select(EVTYPE, FATALITIES, INJURIES) %&gt;%
   mutate(EVTYPE = cleanupEVTYPE(EVTYPE)) %&gt;%
@@ -555,7 +555,13 @@ print(plotTOTALDMG)</code></pre>
 </div>
 <div id="conclusions" class="section level2">
 <h2>Conclusions</h2>
-<p>The conclusions of this analysis are: * TORNADO is the Weather Event with the biggest impact on the US Population Health * FLOOD is the Weather Event with biggest Economical impact on Properties * DROUGHT is the Weather Event with biggest Economical impact on Crops * FLOOD and HURRICANE are the Weather Events with biggest Economical impact in the US Economy in general (Property and Crop)</p>
+<p>The conclusions of this analysis are:</p>
+<ul>
+<li>TORNADO is the Weather Event with the biggest impact on the US Population Health</li>
+<li>FLOOD is the Weather Event with biggest Economical impact on Properties</li>
+<li>DROUGHT is the Weather Event with biggest Economical impact on Crops</li>
+<li>FLOOD and HURRICANE are the Weather Events with biggest Economical impact in the US Economy in general (Property and Crop)</li>
+</ul>
 </div>
 
 

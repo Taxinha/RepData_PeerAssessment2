@@ -75,7 +75,7 @@ readCSVFile <- function(fileName, ...){
 }
 ```
 
-The resulting dataset is summarised below.
+The resulting dataset is summarized below.
 
 
 ```r
@@ -261,7 +261,7 @@ cleanupEVTYPE <- function(input){
 
 To create the tidy dataset for the analysis of impact on population health rows that don't have fatalities or injuries were ignored. Similarly, only columns related to population health were included - `EVTYPE`, `FATALITIES` and `INJURIES`. The actual cleanup function for `EVTYPE` was also applied at this stage.
 
-The data was then grouped by `EVTYPE` and the sum of fatalities and injuries was calculated for each event type. Since we are looking at the events with the most impact, the total sum was sorted in descending order. The top 10 was then picked from the descending dataset and the `melt` function was applied to prepare the data for ploting.
+The data was then grouped by `EVTYPE` and the sum of fatalities and injuries was calculated for each event type. Since we are looking at the events with the most impact, the total sum was sorted in descending order. The top 10 was then picked from the descending dataset and the `melt` function was applied to prepare the data for plotting.
 
 
 ```r
@@ -610,6 +610,7 @@ print(plotTOTALDMG)
 ## Conclusions
 
 The conclusions of this analysis are:
+
 * TORNADO is the Weather Event with the biggest impact on the US Population Health
 * FLOOD is the Weather Event with biggest Economical impact on Properties
 * DROUGHT is the Weather Event with biggest Economical impact on Crops

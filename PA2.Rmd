@@ -1,7 +1,7 @@
 ---
 title: "Weather Events impact on People Health and Economics in the US"
 author: "Carlos Correia"
-date: "24 November 2014"
+date: "25 November 2014"
 output:
   html_document:
     fig_caption: yes
@@ -65,7 +65,7 @@ readCSVFile <- function(fileName, ...){
 ```
 
 #### cleanupEVTYPE(input)
-The `cleanupEVTYPE` will receive as `input` the __EVTYPE__ from the NOAA data source and apply some normalization
+The `cleanupEVTYPE` will receive as `input` the __EVTYPE__ from the NOAA data source and do some cleanup/fix typos
 ```{r helperFunctions3}
 ## Cleanup and normalize the EVTYPE
 cleanupEVTYPE <- function(input){
@@ -154,9 +154,6 @@ calculateDMG <- function(value, exp){
            M =, m = value * 1000000,
            K =, k = value * 1000,
            H =, h = value * 100,
-           "0" =, "2" =,"3" =, "6" =, "7" = value * 10 + as.numeric(exp), #Zero id 26267
-           "5" = (value * 10 +5 ) * 1000,     ## see remarks 135k for ID 49238
-           "4" = value * 1000000, ## see remark for ID 37895 (2.2M damages)
            value)
   }
 
@@ -165,8 +162,8 @@ calculateDMG <- function(value, exp){
 ```
 
 ### Loading Raw Data
-Starying by calling the `downloadAndExtractZipFile` function to download the [NOAA data source][1] in case we don't have the file locally.  
-Then we call the `readCSVFile` function to read the file and load into `data` dataset variable
+Starting by calling the `downloadAndExtractZipFile` function to download the [NOAA data source][1] in case we don't have the file locally.  
+Then we call the `readCSVFile` function to read the file and load into `data` data set variable
 ```{r dataLoad, cache = TRUE}
 downloadAndExtractZipFile(localZipFile)
 
@@ -175,7 +172,7 @@ str(data)
 ```
 
 ### Cleaning the Data
-The raw dataset has `r ncol(data)` columns, but for this analysis we only need the following columns: 
+The raw data set has `r ncol(data)` columns, but for this analysis we only need the following columns: 
 
 - __EVTYPE__ (_factor_): Weather Event Type
 - __FATALITIES__ (_num_): Number of Fatalities
@@ -192,7 +189,7 @@ summary(tidyData)
 ```
 
 #### TidyData for Weather Events impacts on Population Health
-Using the `tidyData` dataset the the input, we ignore the rows where we don't have Fatalities and Injuries since we want to get the Weather Events with most Health impact. After we select only the 3 columns we need - `EVTYPE`, `FATALITIES` and `INJURIES`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function, group the data by `EVTYPE` and then calculate the sum of Fatalities and Injures for each Weather Event (`EVTYPE`). Since we want the most impact, we sort the total Fatalities and Injures descendent, pick the top 10 and apply the `melt` R function to prepare the data for the plot.
+Using the `tidyData` data set the the input, we ignore the rows where we don't have Fatalities and Injuries since we want to get the Weather Events with most Health impact. After we select only the 3 columns we need - `EVTYPE`, `FATALITIES` and `INJURIES`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function, group the data by `EVTYPE` and then calculate the sum of Fatalities and Injures for each Weather Event (`EVTYPE`). Since we want the most impact, we sort the total Fatalities and Injures descendant, pick the top 10 and apply the `melt` R function to prepare the data for the plot.
 ```{r tidyDataHarmful}
 tidyDataHarmful <- tidyData[!(tidyData$FATALITIES == 0 & tidyData$INJURIES == 0), ] %>%
   select(EVTYPE, FATALITIES, INJURIES) %>%
@@ -211,7 +208,7 @@ summary(tidyDataHarmful)
 ```
 
 #### TidyData for Weather Events impacts on Economics
-From the `tidyData`dataset, we ignore the rows where there isn't Property nor Crop damage value because we want to get the Weather Events with most Economical impact. After we select only the 5 columns we need - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function. In other to get the real monetary value for Property or Crop damage, we call the function `calculateDMG`. Then we group the data by `EVTYPE` and then calculate the total of Propertie and Crop monetary damage for each Weather Event (`EVTYPE`).
+From the `tidyData`data set, we ignore the rows where there isn't Property nor Crop damage value because we want to get the Weather Events with most Economical impact. After we select only the 5 columns we need - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function. In other to get the real monetary value for Property or Crop damage, we call the function `calculateDMG`. Then we group the data by `EVTYPE` and then calculate the total of Properties and Crop monetary damage for each Weather Event (`EVTYPE`).
 ```{r tidyDataDMG}
 tidyDataDMG <- tidyData[!(tidyData$PROPDMG == 0 & tidyData$CROPDMG == 0), ] %>%
   select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
@@ -231,7 +228,7 @@ summary(tidyDataDMG)
 
 ## Results
 ### Weather Event Impact on US Population Health
-Data from the dataset of the most impact Weather Event of Population Health
+Data from the data set of the most impact Weather Event of Population Health
 ```{r tidyDataHarmfulResult}
 tidyDataHarmful
 ```
@@ -251,11 +248,12 @@ print(plotHarmfull)
 ```
 
 ### Weather Events Impact on Economic
-
+The first 5 rows of the tidy data set for the Weather Events Impact on Economic analysis
 ```{r tidyDataDMGResult}
-head(tidyDataDMG)
+head(tidyDataDMG, n=5)
 ```
 
+Since we want the most Economical impact, first we will do that for Properties by creating a new data set `plotPropDMGData` using the `tidyDataDMG` data set as the start, pick only the `EVTYPE` and `Property` column, sort descendant and get the top 10. 
 ```{r tidyDataDMGProp}
 plotPropDMGData <- tidyDataDMG %>%
   select(EVTYPE, Property) %>%
@@ -265,6 +263,7 @@ plotPropDMGData <- tidyDataDMG %>%
 plotPropDMGData
 ```
 
+Now we do exactly the same we did in the previous steps but now for CROP
 ```{r tidyDataDMGCrop}
 plotCropDMGData <- tidyDataDMG %>%
   select(EVTYPE, Crop) %>%
@@ -274,7 +273,7 @@ plotCropDMGData <- tidyDataDMG %>%
 plotCropDMGData
 ```
 
-
+And we plot to show the Weather Impact on the US Economic with Property and Crop damage together
 ```{r plotDMGPROPAndCROP, fig.width=9, fig.cap="Fig. 2) Top 10 Weather Events Economical Impact on (left) Property (right) Crop"}
 plotDMGPROP <- 
     ggplot(plotPropDMGData, aes(x = reorder(EVTYPE, -Property), 
@@ -300,10 +299,9 @@ grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
              main = "Economic impact of Weather Events in the US")
 
 ```
-
-
-
-
+  
+  
+Now we prepare a new data set where we will pick the top 20 Weather Events with the highest Property and Crop monetary damage 
 ```{r tidyDataDMGPropCrop}
 plotTotalDMGData <- tidyDataDMG %>%
   arrange(desc(Property), desc(Crop)) %>%
@@ -335,6 +333,6 @@ With this analysis we conclude that:
 * `r tidyDataHarmful[1, "EVTYPE"]` is the Weather Event with the biggest impact on the US Population Health
 * `r plotPropDMGData[1, "EVTYPE"]` is the Weather Event with biggest Economical impact on the Properties
 * `r plotCropDMGData[1, "EVTYPE"]` is the Weather Event with biggest Economical impact on the Crop
-* `r plotTOTALDMG[1, "EVTYPE"]` and `r plotTOTALDMG[2, "EVTYPE"]` are the Weather Events with biggest Economical impact in the US (Property and Crop)
+* `r plotTotalDMGData[1, "EVTYPE"]` and `r plotTotalDMGData[2, "EVTYPE"]` are the Weather Events with biggest Economical impact in the US (Property and Crop)
 
 [1]: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2 "NOAA Data Source"

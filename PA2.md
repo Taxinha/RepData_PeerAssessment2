@@ -1,6 +1,6 @@
 # Weather Events impact on People Health and Economics in the US
 Carlos Correia  
-24 November 2014  
+25 November 2014  
 
 ## Synopsis
 Weather Events have an impact on the Population Health as well on country Economics.  
@@ -75,7 +75,7 @@ readCSVFile <- function(fileName, ...){
 ```
 
 #### cleanupEVTYPE(input)
-The `cleanupEVTYPE` will receive as `input` the __EVTYPE__ from the NOAA data source and apply some normalization
+The `cleanupEVTYPE` will receive as `input` the __EVTYPE__ from the NOAA data source and do some cleanup/fix typos
 
 ```r
 ## Cleanup and normalize the EVTYPE
@@ -166,9 +166,6 @@ calculateDMG <- function(value, exp){
            M =, m = value * 1000000,
            K =, k = value * 1000,
            H =, h = value * 100,
-           "0" =, "2" =,"3" =, "6" =, "7" = value * 10 + as.numeric(exp), #Zero id 26267
-           "5" = (value * 10 +5 ) * 1000,     ## see remarks 135k for ID 49238
-           "4" = value * 1000000, ## see remark for ID 37895 (2.2M damages)
            value)
   }
 
@@ -177,8 +174,8 @@ calculateDMG <- function(value, exp){
 ```
 
 ### Loading Raw Data
-Starying by calling the `downloadAndExtractZipFile` function to download the [NOAA data source][1] in case we don't have the file locally.  
-Then we call the `readCSVFile` function to read the file and load into `data` dataset variable
+Starting by calling the `downloadAndExtractZipFile` function to download the [NOAA data source][1] in case we don't have the file locally.  
+Then we call the `readCSVFile` function to read the file and load into `data` data set variable
 
 ```r
 downloadAndExtractZipFile(localZipFile)
@@ -236,7 +233,7 @@ str(data)
 ```
 
 ### Cleaning the Data
-The raw dataset has 37 columns, but for this analysis we only need the following columns: 
+The raw data set has 37 columns, but for this analysis we only need the following columns: 
 
 - __EVTYPE__ (_factor_): Weather Event Type
 - __FATALITIES__ (_num_): Number of Fatalities
@@ -287,7 +284,7 @@ summary(tidyData)
 ```
 
 #### TidyData for Weather Events impacts on Population Health
-Using the `tidyData` dataset the the input, we ignore the rows where we don't have Fatalities and Injuries since we want to get the Weather Events with most Health impact. After we select only the 3 columns we need - `EVTYPE`, `FATALITIES` and `INJURIES`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function, group the data by `EVTYPE` and then calculate the sum of Fatalities and Injures for each Weather Event (`EVTYPE`). Since we want the most impact, we sort the total Fatalities and Injures descendent, pick the top 10 and apply the `melt` R function to prepare the data for the plot.
+Using the `tidyData` data set the the input, we ignore the rows where we don't have Fatalities and Injuries since we want to get the Weather Events with most Health impact. After we select only the 3 columns we need - `EVTYPE`, `FATALITIES` and `INJURIES`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function, group the data by `EVTYPE` and then calculate the sum of Fatalities and Injures for each Weather Event (`EVTYPE`). Since we want the most impact, we sort the total Fatalities and Injures descendant, pick the top 10 and apply the `melt` R function to prepare the data for the plot.
 
 ```r
 tidyDataHarmful <- tidyData[!(tidyData$FATALITIES == 0 & tidyData$INJURIES == 0), ] %>%
@@ -325,7 +322,7 @@ summary(tidyDataHarmful)
 ```
 
 #### TidyData for Weather Events impacts on Economics
-From the `tidyData`dataset, we ignore the rows where there isn't Property nor Crop damage value because we want to get the Weather Events with most Economical impact. After we select only the 5 columns we need - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function. In other to get the real monetary value for Property or Crop damage, we call the function `calculateDMG`. Then we group the data by `EVTYPE` and then calculate the total of Propertie and Crop monetary damage for each Weather Event (`EVTYPE`).
+From the `tidyData`data set, we ignore the rows where there isn't Property nor Crop damage value because we want to get the Weather Events with most Economical impact. After we select only the 5 columns we need - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function. In other to get the real monetary value for Property or Crop damage, we call the function `calculateDMG`. Then we group the data by `EVTYPE` and then calculate the total of Properties and Crop monetary damage for each Weather Event (`EVTYPE`).
 
 ```r
 tidyDataDMG <- tidyData[!(tidyData$PROPDMG == 0 & tidyData$CROPDMG == 0), ] %>%
@@ -365,7 +362,7 @@ summary(tidyDataDMG)
 
 ## Results
 ### Weather Event Impact on US Population Health
-Data from the dataset of the most impact Weather Event of Population Health
+Data from the data set of the most impact Weather Event of Population Health
 
 ```r
 tidyDataHarmful
@@ -413,14 +410,14 @@ print(plotHarmfull)
 ![Fig. 1) Top 10 Weather Events on Population Health](./PA2_files/figure-html/plotHarmfull-1.png) 
 
 ### Weather Events Impact on Economic
-
+The first 5 rows of the tidy data set for the Weather Events Impact on Economic analysis
 
 ```r
-head(tidyDataDMG)
+head(tidyDataDMG, n=5)
 ```
 
 ```
-## Source: local data frame [6 x 3]
+## Source: local data frame [5 x 3]
 ## 
 ##                   EVTYPE Property     Crop
 ## 1                      ?     5000        0
@@ -428,9 +425,9 @@ head(tidyDataDMG)
 ## 3          APACHE COUNTY     5000        0
 ## 4 ASTRONOMICAL HIGH TIDE  9425000        0
 ## 5  ASTRONOMICAL LOW TIDE   320000        0
-## 6              AVALANCHE  3721800        0
 ```
 
+Since we want the most Economical impact, first we will do that for Properties by creating a new data set `plotPropDMGData` using the `tidyDataDMG` data set as the start, pick only the `EVTYPE` and `Property` column, sort descendant and get the top 10. 
 
 ```r
 plotPropDMGData <- tidyDataDMG %>%
@@ -445,18 +442,19 @@ plotPropDMGData
 ## Source: local data frame [10 x 2]
 ## 
 ##               EVTYPE     Property
-## 1              FLOOD 145076186889
+## 1              FLOOD 145073817824
 ## 2          HURRICANE  84756180010
-## 3            TORNADO  58542970113
+## 3            TORNADO  58541931979
 ## 4        STORM SURGE  47964724000
-## 5        FLASH FLOOD  16735266179
-## 6               HAIL  15974777189
-## 7  THUNDERSTORM WIND   9773168468
+## 5        FLASH FLOOD  16732869178
+## 6               HAIL  15974470043
+## 7  THUNDERSTORM WIND   9762736256
 ## 8           WILDFIRE   8491563500
 ## 9     TROPICAL STORM   7714390550
-## 10      WINTER STORM   6748997265
+## 10      WINTER STORM   6748997251
 ```
 
+Now we do exactly the same we did in the previous steps but now for CROP
 
 ```r
 plotCropDMGData <- tidyDataDMG %>%
@@ -476,14 +474,14 @@ plotCropDMGData
 ## 3          HURRICANE  5515292800
 ## 4        RIVER FLOOD  5029459000
 ## 5                ICE  5027113500
-## 6               HAIL  3026094806
+## 6               HAIL  3026094623
 ## 7        FLASH FLOOD  1437163150
 ## 8       EXTREME COLD  1313023000
-## 9  THUNDERSTORM WIND  1225459732
+## 9  THUNDERSTORM WIND  1225458988
 ## 10             FROST  1160186000
 ```
 
-
+And we plot to show the Weather Impact on the US Economic with Property and Crop damage together
 
 ```r
 plotDMGPROP <- 
@@ -511,10 +509,9 @@ grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
 ```
 
 ![Fig. 2) Top 10 Weather Events Economical Impact on (left) Property (right) Crop](./PA2_files/figure-html/plotDMGPROPAndCROP-1.png) 
-
-
-
-
+  
+  
+Now we prepare a new data set where we will pick the top 20 Weather Events with the highest Property and Crop monetary damage 
 
 ```r
 plotTotalDMGData <- tidyDataDMG %>%
@@ -527,33 +524,33 @@ plotTotalDMGData
 
 ```
 ##                 EVTYPE     Type        value
-## 1                FLOOD Property 145076186889
+## 1                FLOOD Property 145073817824
 ## 2            HURRICANE Property  84756180010
-## 3              TORNADO Property  58542970113
+## 3              TORNADO Property  58541931979
 ## 4          STORM SURGE Property  47964724000
-## 5          FLASH FLOOD Property  16735266179
-## 6                 HAIL Property  15974777189
-## 7    THUNDERSTORM WIND Property   9773168468
+## 5          FLASH FLOOD Property  16732869178
+## 6                 HAIL Property  15974470043
+## 7    THUNDERSTORM WIND Property   9762736256
 ## 8             WILDFIRE Property   8491563500
 ## 9       TROPICAL STORM Property   7714390550
-## 10        WINTER STORM Property   6748997265
-## 11           HIGH WIND Property   6003353773
+## 10        WINTER STORM Property   6748997251
+## 11           HIGH WIND Property   6003353043
 ## 12         RIVER FLOOD Property   5118945500
-## 13                 ICE Property   3971717315
+## 13                 ICE Property   3971716860
 ## 14          HEAVY RAIN Property   3230998140
 ## 15 SEVERE THUNDERSTORM Property   1205360000
 ## 16             DROUGHT Property   1046106000
-## 17          HEAVY SNOW Property    952949150
-## 18           LIGHTNING Property    933925813
+## 17          HEAVY SNOW Property    952927152
+## 18           LIGHTNING Property    933732447
 ## 19            BLIZZARD Property    659713950
 ## 20             TYPHOON Property    600230000
 ## 21               FLOOD     Crop   5906732950
 ## 22           HURRICANE     Crop   5515292800
-## 23             TORNADO     Crop    417462919
+## 23             TORNADO     Crop    417461470
 ## 24         STORM SURGE     Crop       855000
 ## 25         FLASH FLOOD     Crop   1437163150
-## 26                HAIL     Crop   3026094806
-## 27   THUNDERSTORM WIND     Crop   1225459732
+## 26                HAIL     Crop   3026094623
+## 27   THUNDERSTORM WIND     Crop   1225458988
 ## 28            WILDFIRE     Crop    402781630
 ## 29      TROPICAL STORM     Crop    694896000
 ## 30        WINTER STORM     Crop     32444000
@@ -593,5 +590,6 @@ With this analysis we conclude that:
 * TORNADO is the Weather Event with the biggest impact on the US Population Health
 * FLOOD is the Weather Event with biggest Economical impact on the Properties
 * DROUGHT is the Weather Event with biggest Economical impact on the Crop
+* FLOOD and HURRICANE are the Weather Events with biggest Economical impact in the US (Property and Crop)
 
 [1]: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2 "NOAA Data Source"

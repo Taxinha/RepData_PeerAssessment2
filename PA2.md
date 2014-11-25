@@ -40,12 +40,13 @@ localZipFile <- "./data/storm_data.csv.bz2"
 inputRmdFile <- "PA2.Rmd"
 ```
 
-### Helper functions
-#### downloadAndExtractZipFile(fileName)
-The `downloadAndExtractZipFile` function will verify if the data file (`fileName`) is available, if not will download the file using _CURL_ method. 
+### Loading Raw Data
+
+The data was downloaded from the [NOAA data source][1] using the _CURL_ method into a folder called _data_. The download is only done when the data file is not already present in the working directory.
+
 
 ```r
-## Download and Extract Zip data file
+## Download BZ2 CSV data file
 downloadAndExtractZipFile <- function(fileName){
   ## check if the data folder exists
   if(!file.exists("data")){
@@ -59,8 +60,8 @@ downloadAndExtractZipFile <- function(fileName){
 }
 ```
 
-#### readCSVFile(fileName, ...)
-The `readCSVFile` function will check if the data file exists (`fileName`) and read the data using `read.csv` R function
+The downloaded compressed _CSV_ file was then loaded directly into a dataset - `data`.
+
 
 ```r
 ## Reads the CSV data file
@@ -74,108 +75,8 @@ readCSVFile <- function(fileName, ...){
 }
 ```
 
-#### cleanupEVTYPE(input)
-The `cleanupEVTYPE` will receive as `input` the __EVTYPE__ from the NOAA data source and do some cleanup/fix typos
+The resulting dataset is summarised below.
 
-```r
-## Cleanup and normalize the EVTYPE
-cleanupEVTYPE <- function(input){
-  output <- input %>%
-    toupper() %>%
-    gsub(pattern = "^\\t+", replacement = "", perl = TRUE) %>%
-    gsub(pattern = "^\\s+", replacement = "", perl = TRUE) %>%
-    gsub(pattern = "^AVALANCE.+", replacement = "AVALANCHE", perl = TRUE) %>%
-    gsub(pattern = "^BLIZZARD.+", replacement = "BLIZZARD", perl = TRUE) %>%
-    gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
-    gsub(pattern = "^COASTAL  FLOODING/EROSION$", replacement = "COASTAL FLOOD", perl = TRUE) %>%
-    gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
-    gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
-    gsub(pattern = "^COOL AND WET$", replacement = "COLD", perl = TRUE) %>%
-    gsub(pattern = "^DROUGHT.+", replacement = "DROUGHT", perl = TRUE) %>%
-    gsub(pattern = "^DRY MIRCOBURST WINDS$", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
-    gsub(pattern = "^DUST DEVIL.+", replacement = "DUST DEVIL", perl = TRUE) %>%
-    gsub(pattern = "^DUST STORM.+", replacement = "DUST STORM", perl = TRUE) %>%
-    gsub(pattern = "^EXTREME COLD.+", replacement = "EXTREME COLD", perl = TRUE) %>%
-    gsub(pattern = "^EXTREME WIND CHILL$", replacement = "EXTREME WINDCHILL", perl = TRUE) %>%
-    gsub(pattern = "^FLASH FLOOD.+", replacement = "FLASH FLOOD", perl = TRUE) %>%
-    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
-    gsub(pattern = "^FREEZING.+", replacement = "FREEZE", perl = TRUE) %>%
-    gsub(pattern = "^GUSTY WIND", replacement = "GUSTY WINDS", perl = TRUE) %>%
-    gsub(pattern = "^HEAT WAVE.+", replacement = "HEAT WAVE", perl = TRUE) %>%
-    gsub(pattern = "^HEAVY RAIN.+", replacement = "HEAVY RAIN", perl = TRUE) %>%
-    gsub(pattern = "^HEAVY SNOW.+", replacement = "HEAVY SNOW", perl = TRUE) %>%
-    gsub(pattern = "^FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
-    gsub(pattern = "^RIVER FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
-    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
-    gsub(pattern = "^FROST.+", replacement = "FROST", perl = TRUE) %>%
-    gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
-    gsub(pattern = "^HAIL.+", replacement = "HAIL", perl = TRUE) %>%
-    gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
-    gsub(pattern = "^HIGH SURF.+", replacement = "HIGH SURF", perl = TRUE) %>%
-    gsub(pattern = "^HIGH WIND.+", replacement = "HIGH WIND", perl = TRUE) %>%
-    gsub(pattern = "^HIGH$", replacement = "HIGH WIND", perl = TRUE) %>% ## see REMARKS
-    gsub(pattern = "^HURRICANE.+", replacement = "HURRICANE", perl = TRUE) %>%
-    gsub(pattern = "^HYPOTHERMIA.+", replacement = "HYPOTHERMIA", perl = TRUE) %>%
-    gsub(pattern = "^ICE.+", replacement = "ICE", perl = TRUE) %>%
-    gsub(pattern = "^ICY ROADS.+", replacement = "ICE", perl = TRUE) %>%
-    gsub(pattern = "^LANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE) %>%
-    gsub(pattern = "^LIGHTNING.+", replacement = "LIGHTNING", perl = TRUE) %>%
-    gsub(pattern = "^RECORD/EXCESSIVE HEAT$", replacement = "RECORD HEAT", perl = TRUE) %>%
-    gsub(pattern = "^RIP CURRENT.+", replacement = "RIP CURRENT", perl = TRUE) %>%
-    gsub(pattern = "^SNOW.+", replacement = "SNOW", perl = TRUE) %>%
-    gsub(pattern = "^STORM SURGE.+", replacement = "STORM SURGE", perl = TRUE) %>%
-    gsub(pattern = "^STRONG WIND.+", replacement = "STRONG WIND", perl = TRUE) %>%
-    gsub(pattern = "^THUNDERSTORM.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
-    gsub(pattern = "^THUNDERTORM WINDS$", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
-    gsub(pattern = "^TSTM WIND.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
-    gsub(pattern = "^TORNADO.+", replacement = "TORNADO", perl = TRUE) %>%
-    gsub(pattern = "^TROPICAL STORM.+", replacement = "TROPICAL STORM", perl = TRUE) %>%
-    gsub(pattern = "^UNSEASONABLY WARM.+", replacement = "UNSEASONABLY WARM", perl = TRUE) %>%
-    gsub(pattern = "^URBAN FLOOD.+", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
-    gsub(pattern = "^URBAN SMALL.*", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
-    gsub(pattern = "^URBAN/SMALL STREAM.*", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
-    gsub(pattern = "^URBAN AND SMALL STREAM FLOODIN$", 
-         replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
-    gsub(pattern = "^WATERSPOUT.+", replacement = "WATERSPOUT", perl = TRUE) %>%
-    gsub(pattern = "^WILD.+", replacement = "WILDFIRE", perl = TRUE) %>%
-    gsub(pattern = "^WIND.+", replacement = "WIND", perl = TRUE) %>%
-    gsub(pattern = "^WINTER STORM.+", replacement = "WINTER STORM", perl = TRUE) %>%
-    gsub(pattern = "^WINTER WEATHER.+", replacement = "WINTER WEATHER", perl = TRUE)
-  
-  output
-}
-```
-
-#### calculateDMG(value, exp)
-The `calculateDMG` function will calculate the monetary value of the damage using the `value` and `exp` as input. The `exp` can be:
-
-- B or b: Billion
-- M or m: Million
-- K or k: Thousands
-- H or h: Hundreds
-- Any other option is ignored
-
-```r
-## Calculates the DMG values by checking the EXP and update the DMG value
-calculateDMG <- function(value, exp){
-  output <- value
-  
-  if(as.numeric(value) > 0 && !is.null(exp)) {
-    output <- switch(EXPR = as.character(exp),
-           B =, b = value * 1000000000,
-           M =, m = value * 1000000,
-           K =, k = value * 1000,
-           H =, h = value * 100,
-           value)
-  }
-
-  output
-}
-```
-
-### Loading Raw Data
-Starting by calling the `downloadAndExtractZipFile` function to download the [NOAA data source][1] in case we don't have the file locally.  
-Then we call the `readCSVFile` function to read the file and load into `data` data set variable
 
 ```r
 downloadAndExtractZipFile(localZipFile)
@@ -283,8 +184,85 @@ summary(tidyData)
 ##                    (Other):    84                     (Other):     9
 ```
 
-#### TidyData for Weather Events impacts on Population Health
-Using the `tidyData` data set the the input, we ignore the rows where we don't have Fatalities and Injuries since we want to get the Weather Events with most Health impact. After we select only the 3 columns we need - `EVTYPE`, `FATALITIES` and `INJURIES`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function, group the data by `EVTYPE` and then calculate the sum of Fatalities and Injures for each Weather Event (`EVTYPE`). Since we want the most impact, we sort the total Fatalities and Injures descendant, pick the top 10 and apply the `melt` R function to prepare the data for the plot.
+The `EVTYPE` column needed further cleanup as some values in this cleanup are either redundant, confusing or miswritten. 
+The cleanup was done based on regular expression patterns and it attempted to correct typos and group event types based on similarities. This cleanup was not exhaustive but it proved to be enough for the purposes of this analysis.
+
+
+```r
+## Cleanup and normalize the EVTYPE
+cleanupEVTYPE <- function(input){
+  output <- input %>%
+    toupper() %>%
+    gsub(pattern = "^\\t+", replacement = "", perl = TRUE) %>%
+    gsub(pattern = "^\\s+", replacement = "", perl = TRUE) %>%
+    gsub(pattern = "^AVALANCE.+", replacement = "AVALANCHE", perl = TRUE) %>%
+    gsub(pattern = "^BLIZZARD.+", replacement = "BLIZZARD", perl = TRUE) %>%
+    gsub(pattern = "^COASTAL FLOOD.+", replacement = "COASTAL FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^COASTAL  FLOODING/EROSION$", replacement = "COASTAL FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^COASTALSTORM", replacement = "COASTAL STORM", perl = TRUE) %>%
+    gsub(pattern = "^COLD.+", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^COOL AND WET$", replacement = "COLD", perl = TRUE) %>%
+    gsub(pattern = "^DROUGHT.+", replacement = "DROUGHT", perl = TRUE) %>%
+    gsub(pattern = "^DRY MIRCOBURST WINDS$", replacement = "DRY MIRCOBURST", perl = TRUE) %>%
+    gsub(pattern = "^DUST DEVIL.+", replacement = "DUST DEVIL", perl = TRUE) %>%
+    gsub(pattern = "^DUST STORM.+", replacement = "DUST STORM", perl = TRUE) %>%
+    gsub(pattern = "^EXTREME COLD.+", replacement = "EXTREME COLD", perl = TRUE) %>%
+    gsub(pattern = "^EXTREME WIND CHILL$", replacement = "EXTREME WINDCHILL", perl = TRUE) %>%
+    gsub(pattern = "^FLASH FLOOD.+", replacement = "FLASH FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
+    gsub(pattern = "^FREEZING.+", replacement = "FREEZE", perl = TRUE) %>%
+    gsub(pattern = "^GUSTY WIND", replacement = "GUSTY WINDS", perl = TRUE) %>%
+    gsub(pattern = "^HEAT WAVE.+", replacement = "HEAT WAVE", perl = TRUE) %>%
+    gsub(pattern = "^HEAVY RAIN.+", replacement = "HEAVY RAIN", perl = TRUE) %>%
+    gsub(pattern = "^HEAVY SNOW.+", replacement = "HEAVY SNOW", perl = TRUE) %>%
+    gsub(pattern = "^FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^RIVER FLOOD.+", replacement = "FLOOD", perl = TRUE) %>%
+    gsub(pattern = "^FREEZE.+", replacement = "FREEZE", perl = TRUE) %>%
+    gsub(pattern = "^FROST.+", replacement = "FROST", perl = TRUE) %>%
+    gsub(pattern = "^GUSTY WINDS.+", replacement = "GUSTY WINDS", perl = TRUE) %>%
+    gsub(pattern = "^HAIL.+", replacement = "HAIL", perl = TRUE) %>%
+    gsub(pattern = "^HEAVY SURF.+", replacement = "HEAVY SURF", perl = TRUE) %>%
+    gsub(pattern = "^HIGH SURF.+", replacement = "HIGH SURF", perl = TRUE) %>%
+    gsub(pattern = "^HIGH WIND.+", replacement = "HIGH WIND", perl = TRUE) %>%
+    gsub(pattern = "^HIGH$", replacement = "HIGH WIND", perl = TRUE) %>% ## see REMARKS
+    gsub(pattern = "^HURRICANE.+", replacement = "HURRICANE", perl = TRUE) %>%
+    gsub(pattern = "^HYPOTHERMIA.+", replacement = "HYPOTHERMIA", perl = TRUE) %>%
+    gsub(pattern = "^ICE.+", replacement = "ICE", perl = TRUE) %>%
+    gsub(pattern = "^ICY ROADS.+", replacement = "ICE", perl = TRUE) %>%
+    gsub(pattern = "^LANDSLIDE.+", replacement = "LANDSLIDE", perl = TRUE) %>%
+    gsub(pattern = "^LIGHTNING.+", replacement = "LIGHTNING", perl = TRUE) %>%
+    gsub(pattern = "^RECORD/EXCESSIVE HEAT$", replacement = "RECORD HEAT", perl = TRUE) %>%
+    gsub(pattern = "^RIP CURRENT.+", replacement = "RIP CURRENT", perl = TRUE) %>%
+    gsub(pattern = "^SNOW.+", replacement = "SNOW", perl = TRUE) %>%
+    gsub(pattern = "^STORM SURGE.+", replacement = "STORM SURGE", perl = TRUE) %>%
+    gsub(pattern = "^STRONG WIND.+", replacement = "STRONG WIND", perl = TRUE) %>%
+    gsub(pattern = "^THUNDERSTORM.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^THUNDERTORM WINDS$", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^TSTM WIND.*", replacement = "THUNDERSTORM WIND", perl = TRUE) %>%
+    gsub(pattern = "^TORNADO.+", replacement = "TORNADO", perl = TRUE) %>%
+    gsub(pattern = "^TROPICAL STORM.+", replacement = "TROPICAL STORM", perl = TRUE) %>%
+    gsub(pattern = "^UNSEASONABLY WARM.+", replacement = "UNSEASONABLY WARM", perl = TRUE) %>%
+    gsub(pattern = "^URBAN FLOOD.+", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^URBAN SMALL.*", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^URBAN/SMALL STREAM.*", replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^URBAN AND SMALL STREAM FLOODIN$", 
+         replacement = "URBAN/SML STREAM FLD", perl = TRUE) %>%
+    gsub(pattern = "^WATERSPOUT.+", replacement = "WATERSPOUT", perl = TRUE) %>%
+    gsub(pattern = "^WILD.+", replacement = "WILDFIRE", perl = TRUE) %>%
+    gsub(pattern = "^WIND.+", replacement = "WIND", perl = TRUE) %>%
+    gsub(pattern = "^WINTER STORM.+", replacement = "WINTER STORM", perl = TRUE) %>%
+    gsub(pattern = "^WINTER WEATHER.+", replacement = "WINTER WEATHER", perl = TRUE)
+  
+  output
+}
+```
+
+#### TidyData for analysing the impact of weather events on Population Health
+
+To create the tidy dataset for the analysis of impact on population health rows that don't have fatalities or injuries were ignored. Similarly, only columns related to population health were included - `EVTYPE`, `FATALITIES` and `INJURIES`. The actual cleanup function for `EVTYPE` was also applied at this stage.
+
+The data was then grouped by `EVTYPE` and the sum of fatalities and injuries was calculated for each event type. Since we are looking at the events with the most impact, the total sum was sorted in descending order. The top 10 was then picked from the descending dataset and the `melt` function was applied to prepare the data for ploting.
+
 
 ```r
 tidyDataHarmful <- tidyData[!(tidyData$FATALITIES == 0 & tidyData$INJURIES == 0), ] %>%
@@ -321,8 +299,41 @@ summary(tidyDataHarmful)
 ##                                   Max.   :91364
 ```
 
-#### TidyData for Weather Events impacts on Economics
-From the `tidyData`data set, we ignore the rows where there isn't Property nor Crop damage value because we want to get the Weather Events with most Economical impact. After we select only the 5 columns we need - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`, do some cleanup to the `EVTYPE` factor calling the `cleanupEVTYPE` function. In other to get the real monetary value for Property or Crop damage, we call the function `calculateDMG`. Then we group the data by `EVTYPE` and then calculate the total of Properties and Crop monetary damage for each Weather Event (`EVTYPE`).
+#### TidyData for analysing the impact of weather events on Economics
+To create the tidy dataset for the analysis of impact on the economy rows that don't have crop or property damage were ignored. Similarly, only columns related to economic impact were included - `EVTYPE`, `PROPDMG`, `PROPDMGEXP`, `CROPDMG` and `CROPDMGEXP`. The actual cleanup function for `EVTYPE` was also applied at this stage.
+
+In other to get the real monetary value for property or crop damage, the actual damage value - `PROPDMG` and `CROPDMG` - needs to multiplied by the exponent set in the corresponding exponent columns - `PROPDMGEXP` and `CROPDMGEXP`.
+
+For the purpose of this study we assume the exponents to have the following values only. Any other option is ignored.
+
+- B or b: Billion
+- M or m: Million
+- K or k: Thousands
+- H or h: Hundreds
+
+
+```r
+## Calculates the DMG values by checking the EXP and update the DMG value
+calculateDMG <- function(value, exp){
+  output <- value
+  
+  if(as.numeric(value) > 0 && !is.null(exp)) {
+    output <- switch(EXPR = as.character(exp),
+           B =, b = value * 1000000000,
+           M =, m = value * 1000000,
+           K =, k = value * 1000,
+           H =, h = value * 100,
+           value)
+  }
+
+  output
+}
+```
+
+The data was then grouped by `EVTYPE` and the sum of property and crop damages was calculated for each event type.
+
+Since we are looking at the events with the most impact, the total sum was sorted in descending order and the top 10 was then picked.
+
 
 ```r
 tidyDataDMG <- tidyData[!(tidyData$PROPDMG == 0 & tidyData$CROPDMG == 0), ] %>%
@@ -361,8 +372,11 @@ summary(tidyDataDMG)
 ```
 
 ## Results
-### Weather Event Impact on US Population Health
-Data from the data set of the most impact Weather Event of Population Health
+
+### Impact of Weather Events on US Population Health
+
+The following shows the dataset that contains the most harmful weather events in terms of population health. The dataset is small enough in this case to be able to easily display all of it.
+
 
 ```r
 tidyDataHarmful
@@ -392,7 +406,8 @@ tidyDataHarmful
 ## 20      EXTREME COLD   Injury   255
 ```
 
-Now we plot to show the which Weather Event has the bigger impact on the US Population Health
+Plotting the dataset above gives a better overview of which events have the most impact on US population health.
+
 
 ```r
 plotHarmfull <- 
@@ -407,10 +422,12 @@ plotHarmfull <-
 print(plotHarmfull)
 ```
 
-![Fig. 1) Top 10 Weather Events on Population Health](./PA2_files/figure-html/plotHarmfull-1.png) 
+![Fig. 1) Top 10 Weather Events with impact on Population Health](./PA2_files/figure-html/plotHarmfull-1.png) 
 
-### Weather Events Impact on Economic
-The first 5 rows of the tidy data set for the Weather Events Impact on Economic analysis
+### Economic Impact of Weather Events
+
+The following shows the first 5 rows of the dataset that contains the most harmful weather events in terms of economic cost. In this case the dataset is quite big so only the first 5 rows were shown for illustration purposes.
+
 
 ```r
 head(tidyDataDMG, n=5)
@@ -427,7 +444,10 @@ head(tidyDataDMG, n=5)
 ## 5  ASTRONOMICAL LOW TIDE   320000        0
 ```
 
-Since we want the most Economical impact, first we will do that for Properties by creating a new data set `plotPropDMGData` using the `tidyDataDMG` data set as the start, pick only the `EVTYPE` and `Property` column, sort descendant and get the top 10. 
+To show the impact on property and crop damage separately the original tidy dataset with the economical impact was divided in 2 new datasets:
+
+- A dataset to analyse property damage with only the `EVTYPE` and `Property` columns
+
 
 ```r
 plotPropDMGData <- tidyDataDMG %>%
@@ -454,7 +474,8 @@ plotPropDMGData
 ## 10      WINTER STORM   6748997251
 ```
 
-Now we do exactly the same we did in the previous steps but now for CROP
+- A dataset to analyse crop damage with only the `EVTYPE` and `Crop` columns
+
 
 ```r
 plotCropDMGData <- tidyDataDMG %>%
@@ -481,7 +502,8 @@ plotCropDMGData
 ## 10             FROST  1160186000
 ```
 
-And we plot to show the Weather Impact on the US Economic with Property and Crop damage together
+The following plot shows the impact of weather events on the US economy of property and crop damage side by side:
+
 
 ```r
 plotDMGPROP <- 
@@ -508,10 +530,10 @@ grid.arrange(plotDMGPROP, plotCROPDMG, ncol = 2,
              main = "Economic impact of Weather Events in the US")
 ```
 
-![Fig. 2) Top 10 Weather Events Economical Impact on (left) Property (right) Crop](./PA2_files/figure-html/plotDMGPROPAndCROP-1.png) 
+![Fig. 2) Top 10 Weather Events with Economical Impact on (left) Property (right) Crop](./PA2_files/figure-html/plotDMGPROPAndCROP-1.png) 
   
-  
-Now we prepare a new data set where we will pick the top 20 Weather Events with the highest Property and Crop monetary damage 
+A new dataset was then created to show the top 20 weather events with the highest impact on both property and crop damage.  
+ 
 
 ```r
 plotTotalDMGData <- tidyDataDMG %>%
@@ -566,7 +588,8 @@ plotTotalDMGData
 ## 40             TYPHOON     Crop       825000
 ```
 
-We plot to show which Weather Event has the most Impact on country Economic (Property and Crop)
+The plot below shows which event has the most impact on property and crop damages combined.
+
 
 ```r
 plotTOTALDMG <- 
@@ -582,14 +605,14 @@ plotTOTALDMG <-
 print(plotTOTALDMG)
 ```
 
-![Fig. 3) Top 20 Weather Events Economical Impact (Property and Crop)](./PA2_files/figure-html/plotTotalDMG-1.png) 
+![Fig. 3) Top 20 Weather Events with Economical Impact (Property and Crop)](./PA2_files/figure-html/plotTotalDMG-1.png) 
 
 ## Conclusions
-With this analysis we conclude that:
 
+The conclusions of this analysis are:
 * TORNADO is the Weather Event with the biggest impact on the US Population Health
-* FLOOD is the Weather Event with biggest Economical impact on the Properties
-* DROUGHT is the Weather Event with biggest Economical impact on the Crop
-* FLOOD and HURRICANE are the Weather Events with biggest Economical impact in the US (Property and Crop)
+* FLOOD is the Weather Event with biggest Economical impact on Properties
+* DROUGHT is the Weather Event with biggest Economical impact on Crops
+* FLOOD and HURRICANE are the Weather Events with biggest Economical impact in the US Economy in general (Property and Crop)
 
 [1]: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2 "NOAA Data Source"
